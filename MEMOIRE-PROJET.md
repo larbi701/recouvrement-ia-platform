@@ -414,3 +414,27 @@ L'utilisateur a testé la version avec l'entonnoir (cartes) et l'action réelle 
 **d) Fix technique seed** : `prisma.callTask.deleteMany()` manquait dans le script de seed (ajouté après le modèle CallTask) — provoquait une erreur de contrainte de clé étrangère au reseed. Corrigé.
 
 **Encore non fait, à évaluer si demandé** : un "plan" multi-étapes visible par dossier avant exécution (comme Léa qui propose un plan puis livre) — actuellement le pilotage automatique exécute directement l'étape due, sans écran de plan intermédiaire à valider. Le pilotage automatique répond à "moins de clics, plus d'exécution groupée", pas encore à "voir le raisonnement complet avant que ça parte".
+
+## 28. Retour "aucune réponse à mes attentes" → demande de prérequis, puis nouvelles specs concrètes (2026-09-15)
+
+Face à un nouveau retour négatif, l'utilisateur a explicitement demandé qu'on fasse un travail de spécification métier avant de continuer à coder à l'aveugle — proposition acceptée mais reportée ("on fera ça dans un second temps"). En attendant, il a donné des specs concrètes pour finir ce premier POC :
+
+1. **Renommer l'agent** : Yasmine → **Yas** (appliqué partout : UI, prompts, activité, présentation).
+2. **Onglets cliquables** pour naviguer dans la démo, avec compréhension claire des niveaux.
+3. **Validation humaine du niveau AVANT l'action de l'agent** (pas seulement avant l'envoi du message généré).
+4. **Canaux** confirmés : WhatsApp, email, appel téléphonique (déjà couverts).
+5. **Tons visibles selon le cas** (amical/ferme/dernier avertissement) — déjà modélisés, à rendre visibles explicitement.
+6. **Transparence de classification** : voir comment chaque créance a été classée, selon quels critères, pour comprendre l'approche recommandée (canal + ton).
+7. **Rajouter l'agent Négociation** dans cette logique de transparence si pertinent.
+
+### Construit en réponse
+
+- **`src/lib/scoring.ts`** : `computeRiskScore` retourne maintenant un `breakdown` détaillé (4 critères : ancienneté du retard, montant, relances déjà envoyées, silence prolongé — chacun avec sa valeur observée et ses points sur le total).
+- **`src/lib/workflow.ts`** : chaque branche `EMAIL`/`WHATSAPP` de `computeNextAction` porte désormais un `reason` explicite (pourquoi ce canal, pourquoi ce ton) — avant, seul `CALL_TASK` en avait un.
+- **`ClassificationCard.tsx`** (nouveau) : affiche le détail des critères de l'Agent Analyste (barres de progression par critère), l'analyse de l'Agent Négociateur quand une réponse existe, la recommandation canal+ton de Yas avec sa justification, et **un bouton "✓ Valider cette approche avant que Yas agisse"** — les contrôles d'action (générer/appeler) restent masqués tant que ce n'est pas cliqué.
+- **`TabbedDossierList.tsx`** (nouveau) : remplace le filtrage par page/query-param sur `/dossiers` par de vrais **onglets cliquables côté client** (Tous / Relance automatique / Appel requis / Réponse à traiter / Urgent), bascule instantanée sans rechargement.
+- **Testé en direct** : dossier Meknès Industrie → classification affichée (73/100, Urgent, détail des 4 critères) → recommandation "Email, dernier avertissement" avec justification → clic sur Valider → contrôle "Générer un email" apparaît alors seulement.
+
+### Incident technique découvert et corrigé pendant cette session
+
+Le script PowerShell de renommage en masse (Yasmine→Yas, tour précédent) a silencieusement **corrompu `src/app/dossiers/[id]/page.tsx`** : une erreur `Get-Content -Raw` sur un fichier a laissé la variable `$content` de l'itération précédente (celle du Cockpit) dans la boucle, qui a alors été écrite par erreur dans le fichier de la page détail — remplaçant le rendu du dossier par une copie du Cockpit. Resté invisible jusqu'à ce qu'on teste spécifiquement l'ouverture d'un dossier après le renommage. **Corrigé** en récrivant le fichier correctement. Leçon retenue : après un script de remplacement en masse via boucle PowerShell, vérifier qu'aucune erreur silencieuse n'a permis une réutilisation de variable entre fichiers — un `grep` de contenu croisé (comme celui fait ici avec "Pilotage automatique") est un bon filet de sécurité rapide.
