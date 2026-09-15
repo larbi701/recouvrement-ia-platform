@@ -69,7 +69,9 @@ function buildReasoning(args: {
   return `${daysOverdue} jours de retard sur ${amountLabel}, ${reminderCount} relance(s) envoyée(s).${legalNote}`;
 }
 
-export function suggestedTone(reminderCount: number): "AMICALE" | "FERME" | "MISE_EN_DEMEURE" {
+export type Tone = "AMICALE" | "FERME" | "MISE_EN_DEMEURE";
+
+export function suggestedTone(reminderCount: number): Tone {
   if (reminderCount <= 1) return "AMICALE";
   if (reminderCount <= 3) return "FERME";
   return "MISE_EN_DEMEURE";

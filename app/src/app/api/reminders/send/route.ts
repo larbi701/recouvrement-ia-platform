@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 // "Envoi" simulé pour la démo : on journalise la relance (traçabilité),
 // on ne l'expédie pas réellement — cf. §9 du fichier mémoire du projet.
 export async function POST(req: Request) {
-  const { invoiceId, tone, content, createdBy } = await req.json();
+  const { invoiceId, channel, tone, content, createdBy } = await req.json();
 
   if (!invoiceId || !tone || !content) {
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
@@ -13,6 +13,7 @@ export async function POST(req: Request) {
   const reminder = await prisma.reminder.create({
     data: {
       invoiceId,
+      channel: channel === "WHATSAPP" ? "WHATSAPP" : "EMAIL",
       tone,
       content,
       status: "ENVOYEE_SIMULEE",

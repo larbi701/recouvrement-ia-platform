@@ -4,7 +4,8 @@ import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { computeRiskScore, suggestedTone } from "@/lib/scoring";
 
 export async function POST(req: Request) {
-  const { invoiceId } = await req.json();
+  const { invoiceId, channel: requestedChannel } = await req.json();
+  const channel = requestedChannel === "WHATSAPP" ? "WHATSAPP" : "EMAIL";
 
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
@@ -39,7 +40,14 @@ export async function POST(req: Request) {
       ? `\n- Contexte légal marocain : ce retard approche ou dépasse le plafond légal de 120 jours entre partenaires commerciaux fixé par la loi 69-21. Tu peux le mentionner brièvement, de façon factuelle (pas comme une menace), pour appuyer le sérieux de la situation.`
       : "";
 
-  const prompt = `Tu es l'agent de recouvrement amiable de "Meridian Distribution", une PME marocaine (B2B). Rédige UNE relance par email en français, professionnelle et humaine, jamais agressive.
+  const formatRules =
+    channel === "WHATSAPP"
+      ? `- Format WhatsApp : message court (40 à 70 mots), sans "Objet :", sans formule d'ouverture/fermeture façon lettre — direct, comme un message professionnel qu'on tape sur son téléphone. Une ou deux phrases courtes maximum par paragraphe. Pas d'emoji.
+- Termine par une signature courte sur sa propre ligne : "Meridian Distribution".`
+      : `- Format email : commence par "Objet : ...", corps structuré en paragraphes courts, 130 à 180 mots.
+- Termine par une signature générique : "Le service recouvrement — Meridian Distribution" (pas de prénom inventé).`;
+
+  const prompt = `Tu es l'agent de recouvrement amiable de "Meridian Distribution", une PME marocaine (B2B). Rédige UNE relance en français, professionnelle et humaine, jamais agressive, au format ${channel === "WHATSAPP" ? "WhatsApp" : "email"}.
 
 Contexte :
 - Client : ${invoice.client.name} (contact : ${invoice.client.contactName})
@@ -51,12 +59,11 @@ Contexte :
 
 Règles strictes :
 - On est encore dans le recouvrement AMIABLE, pas dans le contentieux : ne jamais mentionner "porter plainte" (terme de droit pénal, inapproprié pour un impayé commercial) ni promettre une action judiciaire précise. Si une escalade doit être évoquée (ton "dernier avertissement" uniquement), parle d'une "mise en demeure formelle" et d'une possible "procédure de recouvrement", sans détailler davantage.
-- N'utilise aucun texte entre crochets à compléter (pas de "[Nom]", "[date]", etc.) — écris un email fini, prêt à envoyer tel quel. Pour un délai, utilise une formulation relative ("dans les 5 jours suivant la réception de ce message"), jamais une date absolue que tu ne peux pas connaître.
-- Termine par une signature générique : "Le service recouvrement — Meridian Distribution" (pas de prénom inventé).
-- Reste concis : 130 à 180 mots pour le corps du message.
+- N'utilise aucun texte entre crochets à compléter (pas de "[Nom]", "[date]", etc.) — écris un message fini, prêt à envoyer tel quel. Pour un délai, utilise une formulation relative ("dans les 5 jours suivant la réception de ce message"), jamais une date absolue que tu ne peux pas connaître.
+${formatRules}
 - Ton de voix (charte VELOS IA) : factuel (un chiffre plutôt qu'un adjectif), direct (phrases courtes, voix active), sobre (aucune formule à effet). Évite tout vocabulaire du type "solution innovante", "révolutionner", "disruptif".
 
-Réponds uniquement avec "Objet : ..." suivi du corps de l'email. Pas de commentaire, pas de balise, pas d'explication.`;
+Réponds uniquement avec le message. Pas de commentaire, pas de balise, pas d'explication.`;
 
   const message = await anthropic.messages.create({
     model: AGENT_MODEL,
@@ -70,5 +77,5 @@ Réponds uniquement avec "Objet : ..." suivi du corps de l'email. Pas de comment
     .join("\n")
     .trim();
 
-  return NextResponse.json({ draft, tone, scoring, daysOverdue });
+  return NextResponse.json({ draft, tone, channel, scoring, daysOverdue });
 }

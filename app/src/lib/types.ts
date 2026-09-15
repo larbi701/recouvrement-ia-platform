@@ -1,5 +1,8 @@
+import type { NextAction } from "@/lib/workflow";
+
 export type ReminderDTO = {
   id: string;
+  channel: string;
   tone: string;
   content: string;
   status: string;
@@ -16,6 +19,18 @@ export type ReplyDTO = {
   receivedAt: string;
 };
 
+export type CallTaskDTO = {
+  id: string;
+  reason: string;
+  talkingPoints: string;
+  status: string;
+  outcome: string | null;
+  outcomeNote: string | null;
+  promisedDate: string | null;
+  createdAt: string;
+  completedAt: string | null;
+};
+
 export type WorklistItem = {
   invoiceId: string;
   reference: string;
@@ -27,11 +42,15 @@ export type WorklistItem = {
   sector: string;
   contactName: string;
   contactEmail: string;
+  contactPhone: string;
   behaviorNote: string;
   strategic: boolean;
+  chronicLatePayer: boolean;
   reminders: ReminderDTO[];
   replies: ReplyDTO[];
+  callTasks: CallTaskDTO[];
   score: number;
   priority: "URGENT" | "A_TRAITER" | "SURVEILLANCE";
   reasoning: string;
+  nextAction: NextAction;
 };

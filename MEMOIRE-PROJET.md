@@ -305,3 +305,36 @@ L'utilisateur a fourni un vrai document de marque (`VELOS_IA_Charte_Graphique_V5
 **Non repris tel quel (hors périmètre app web)** : le gabarit de signature email (section 06 de la charte) — concerne la messagerie personnelle de l'utilisateur, pas l'application. À traiter séparément si demandé.
 
 **Vérification effectuée** : rendu contrôlé dans le navigateur après application (captures internes) — logo, couleurs de badges de priorité, encadré "raisonnement de l'agent", boutons, tous conformes aux couples couleur/contraste autorisés par la charte (section 05).
+
+## 21. Workflow multi-canal — mimer le chargé de recouvrement humain (2026-09-15)
+
+Constat de l'utilisateur : un chargé de recouvrement humain ne relance pas tout le monde par email — il **escalade le canal** (email → WhatsApp → appel téléphonique → email formel final) et **saute des étapes selon ce qu'il connaît du client**. Le POC ne faisait que de l'email ; corrigé.
+
+### Échelle standard retenue
+1. J+1 à J+7 : Email, ton amical.
+2. J+8 à J+15 (ou immédiatement si client chronique) : WhatsApp.
+3. J+16 à J+45, si aucun appel n'a encore été tenté : **fiche d'appel générée par l'IA** + tâche assignée à un humain (l'IA ne passe pas l'appel elle-même — voir §22).
+4. Ton "dernier avertissement" (MISE_EN_DEMEURE, ≥4 relances) : **toujours email**, même pour un client chronique — c'est la trace écrite qui compte juridiquement avant l'approche du plafond légal.
+5. ≥120 jours : sort de l'amiable, flag `LEGAL_ESCALATION` (transmission au contentieux, hors périmètre).
+
+### Personnalisation
+- Client stratégique jamais contacté → fiche d'appel immédiate, pas de relance automatique (préserve la relation).
+- Client chronique (`chronicLatePayer`) qui ignore les emails → saute directement à WhatsApp.
+- Réponse client non résolue → aucune action automatique, geré par l'agent Négociateur (humain doit trancher).
+
+### Implémentation
+- **Schéma** (`prisma/schema.prisma`) : `Client.contactPhone`, `Client.chronicLatePayer` ; `Reminder.channel` (EMAIL/WHATSAPP) ; nouveau modèle `CallTask` (reason, talkingPoints générés par l'IA, status A_FAIRE/FAIT, outcome, outcomeNote, promisedDate).
+- **Moteur de décision** : `src/lib/workflow.ts`, fonction `computeNextAction()` — calcule le prochain canal/action à partir des signaux (jours de retard, historique par canal, tâches d'appel, profil client). C'est ce qui pilote le bouton d'action affiché à l'écran.
+- **API** : `/api/reminders/generate` accepte maintenant un `channel` (adapte le format du prompt : email structuré vs WhatsApp court/direct sans "Objet :") ; nouvelles routes `/api/calls/generate` (génère la fiche d'appel) et `/api/calls/complete` (enregistre le résultat de l'appel : promesse de paiement + date, ne répond pas, conteste, payé).
+- **UI** (`Worklist.tsx`) : badge "Appel à faire" sur la worklist, canal affiché dans l'historique, panneau d'action qui s'adapte automatiquement au type de prochaine action (email/WhatsApp/fiche d'appel + formulaire de résultat/alerte légale).
+- **Testé en direct** (vrais appels API, pas juste relu) : génération WhatsApp (Al Amal), création + complétion d'une fiche d'appel avec résultat "Promesse de paiement", puis génération d'un message WhatsApp de suivi — la worklist et le raisonnement se sont mis à jour correctement à chaque étape.
+
+## 22. Agent vocal (appels IA réels) — reporté à une phase séparée
+
+L'utilisateur a demandé ce qu'il faudrait pour qu'un agent IA passe lui-même les appels (piste ElevenLabs). Prérequis identifiés :
+- **Téléphonie programmable** (ex. Twilio) pour déclencher un appel sortant depuis un serveur — pas littéralement "installé sur le téléphone" du chargé de recouvrement (techniquement bloqué côté iOS/Android pour l'audio d'appel natif). Coût à la minute.
+- **ElevenLabs Conversational AI** (ou équivalent) pour la conversation vocale, branché sur la téléphonie. Abonnement + usage payants.
+- **WhatsApp Calling** : nécessite la WhatsApp Business Platform (Meta), vérification d'entreprise, modèles de messages pré-approuvés — un onboarding de plusieurs jours/semaines, pas une simple clé API.
+- **Conformité** : consentement à l'enregistrement des appels, hébergement des données vocales hors Maroc (recoupe le point juridique déjà en suspens, §1bis), cadre ANRT pour la téléphonie.
+
+**Décision (2026-09-15)** : reporté à une phase séparée, après le pilote, avec son propre budget — casse la contrainte "0€" de la démo actuelle. Ce qui est construit à la place (§21) : l'IA prépare la fiche d'appel, un humain appelle et saisit le résultat. C'est le comportement réaliste d'un outil de collections qui n'a pas encore d'agent vocal, pas un pis-aller honteux.

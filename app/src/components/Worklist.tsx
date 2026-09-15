@@ -22,10 +22,23 @@ const TONE_LABELS: Record<string, string> = {
   MISE_EN_DEMEURE: "Dernier avertissement",
 };
 
+const CHANNEL_LABELS: Record<string, string> = {
+  EMAIL: "Email",
+  WHATSAPP: "WhatsApp",
+};
+
 const INTENT_LABELS: Record<string, string> = {
   DEMANDE_DELAI: "Demande de délai",
   CONTESTATION: "Contestation",
   CONFIRMATION: "Confirmation de paiement",
+  AUTRE: "Autre",
+};
+
+const OUTCOME_LABELS: Record<string, string> = {
+  PROMESSE_PAIEMENT: "Promesse de paiement",
+  NE_REPOND_PAS: "Ne répond pas",
+  CONTESTE: "Conteste",
+  PAYE: "A payé pendant l'appel",
   AUTRE: "Autre",
 };
 
@@ -36,6 +49,7 @@ function formatDate(iso: string) {
 type GenerateResponse = {
   draft: string;
   tone: string;
+  channel: string;
 };
 
 export function Worklist({ items }: { items: WorklistItem[] }) {
@@ -43,23 +57,36 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(items[0]?.invoiceId ?? null);
   const [draft, setDraft] = useState<string | null>(null);
   const [draftTone, setDraftTone] = useState<string | null>(null);
+  const [draftChannel, setDraftChannel] = useState<string | null>(null);
   const [loadingGenerate, setLoadingGenerate] = useState(false);
   const [loadingSend, setLoadingSend] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
+
+  const [callLoading, setCallLoading] = useState(false);
+  const [callOutcome, setCallOutcome] = useState("PROMESSE_PAIEMENT");
+  const [callNote, setCallNote] = useState("");
+  const [callPromisedDate, setCallPromisedDate] = useState("");
+  const [callSubmitting, setCallSubmitting] = useState(false);
 
   const selected = useMemo(
     () => items.find((i) => i.invoiceId === selectedId) ?? null,
     [items, selectedId]
   );
 
+  const pendingCall = selected?.callTasks.find((c) => c.status === "A_FAIRE") ?? null;
+
   function selectItem(id: string) {
     setSelectedId(id);
     setDraft(null);
     setDraftTone(null);
+    setDraftChannel(null);
     setConfirmation(null);
+    setCallNote("");
+    setCallPromisedDate("");
+    setCallOutcome("PROMESSE_PAIEMENT");
   }
 
-  async function handleGenerate() {
+  async function handleGenerate(channel: "EMAIL" | "WHATSAPP") {
     if (!selected) return;
     setLoadingGenerate(true);
     setConfirmation(null);
@@ -67,12 +94,13 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
       const res = await fetch("/api/reminders/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invoiceId: selected.invoiceId }),
+        body: JSON.stringify({ invoiceId: selected.invoiceId, channel }),
       });
       if (!res.ok) throw new Error("Échec de la génération");
       const data: GenerateResponse = await res.json();
       setDraft(data.draft);
       setDraftTone(data.tone);
+      setDraftChannel(data.channel);
     } catch {
       setConfirmation("Erreur — vérifie que ta clé API Claude est bien renseignée dans .env.local");
     } finally {
@@ -81,7 +109,7 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
   }
 
   async function handleSend() {
-    if (!selected || !draft || !draftTone) return;
+    if (!selected || !draft || !draftTone || !draftChannel) return;
     setLoadingSend(true);
     try {
       const res = await fetch("/api/reminders/send", {
@@ -89,20 +117,67 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           invoiceId: selected.invoiceId,
+          channel: draftChannel,
           tone: draftTone,
           content: draft,
           createdBy: "HUMAIN",
         }),
       });
       if (!res.ok) throw new Error("Échec de l'envoi");
-      setConfirmation("Relance envoyée ✓ (simulation — traçabilité enregistrée)");
+      setConfirmation(
+        `${draftChannel === "WHATSAPP" ? "Message WhatsApp" : "Email"} envoyé ✓ (simulation — traçabilité enregistrée)`
+      );
       setDraft(null);
       setDraftTone(null);
+      setDraftChannel(null);
       router.refresh();
     } catch {
       setConfirmation("Erreur lors de l'envoi.");
     } finally {
       setLoadingSend(false);
+    }
+  }
+
+  async function handleCreateCallTask() {
+    if (!selected || selected.nextAction.kind !== "CALL_TASK") return;
+    setCallLoading(true);
+    try {
+      const res = await fetch("/api/calls/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId: selected.invoiceId, reason: selected.nextAction.reason }),
+      });
+      if (!res.ok) throw new Error("Échec de la génération");
+      router.refresh();
+    } catch {
+      setConfirmation("Erreur — vérifie que ta clé API Claude est bien renseignée dans .env.local");
+    } finally {
+      setCallLoading(false);
+    }
+  }
+
+  async function handleCompleteCall() {
+    if (!pendingCall) return;
+    setCallSubmitting(true);
+    try {
+      const res = await fetch("/api/calls/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          callTaskId: pendingCall.id,
+          outcome: callOutcome,
+          outcomeNote: callNote,
+          promisedDate: callOutcome === "PROMESSE_PAIEMENT" && callPromisedDate ? callPromisedDate : null,
+        }),
+      });
+      if (!res.ok) throw new Error("Échec de l'enregistrement");
+      setCallNote("");
+      setCallPromisedDate("");
+      router.refresh();
+    } catch {
+      setConfirmation("Erreur lors de l'enregistrement du résultat d'appel.");
+    } finally {
+      setCallSubmitting(false);
     }
   }
 
@@ -129,6 +204,11 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
                         className="text-violet-velos"
                       >
                         ★
+                      </span>
+                    )}
+                    {item.callTasks.some((c) => c.status === "A_FAIRE") && (
+                      <span className="rounded-full bg-corail/10 px-2 py-0.5 text-[11px] font-medium text-indigo-deep ring-1 ring-corail/30">
+                        Appel à faire
                       </span>
                     )}
                     {item.replies.length > 0 && (
@@ -163,7 +243,7 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
               {selected.strategic && <span className="text-violet-velos">★</span>}
             </div>
             <p className="text-sm text-graphite/60">
-              {selected.sector} · {selected.contactName} · {selected.contactEmail}
+              {selected.sector} · {selected.contactName} · {selected.contactEmail} · {selected.contactPhone}
             </p>
 
             <div className="mt-4 rounded-lg bg-perle p-3 text-sm text-graphite">
@@ -209,36 +289,129 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
                 {selected.reminders.map((r) => (
                   <li key={r.id} className="rounded-lg border border-lavande-struct p-2 text-xs text-graphite/70">
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="font-medium text-indigo-deep">{TONE_LABELS[r.tone] ?? r.tone}</span>
+                      <span className="font-medium text-indigo-deep">
+                        {CHANNEL_LABELS[r.channel] ?? r.channel} · {TONE_LABELS[r.tone] ?? r.tone}
+                      </span>
                       <span>{formatDate(r.sentAt)}</span>
                     </div>
                     <p className="line-clamp-2 text-graphite/60">{r.content}</p>
                   </li>
                 ))}
-                {selected.reminders.length === 0 && (
-                  <li className="text-xs text-graphite/40">Aucune relance envoyée pour l&apos;instant.</li>
+                {selected.callTasks
+                  .filter((c) => c.status === "FAIT")
+                  .map((c) => (
+                    <li key={c.id} className="rounded-lg border border-lavande-struct p-2 text-xs text-graphite/70">
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="font-medium text-indigo-deep">
+                          Appel · {c.outcome ? OUTCOME_LABELS[c.outcome] ?? c.outcome : "Résultat non précisé"}
+                        </span>
+                        <span>{c.completedAt ? formatDate(c.completedAt) : ""}</span>
+                      </div>
+                      {c.outcomeNote && <p className="line-clamp-2 text-graphite/60">{c.outcomeNote}</p>}
+                    </li>
+                  ))}
+                {selected.reminders.length === 0 && selected.callTasks.length === 0 && (
+                  <li className="text-xs text-graphite/40">Aucun contact envoyé pour l&apos;instant.</li>
                 )}
               </ul>
             </div>
 
             <div className="mt-5 border-t border-lavande-struct pt-4">
-              {!draft ? (
+              {selected.nextAction.kind === "WAIT_HUMAN" && (
+                <p className="text-sm text-graphite/60">
+                  En attente d&apos;une décision humaine sur la réponse du client (voir ci-dessus) — pas de relance
+                  automatique tant que ce n&apos;est pas traité.
+                </p>
+              )}
+
+              {selected.nextAction.kind === "LEGAL_ESCALATION" && (
+                <div className="rounded-lg border border-corail/40 bg-corail/10 p-3 text-sm text-indigo-deep">
+                  Plafond légal marocain de 120 jours dépassé (loi 69-21) — ce dossier sort du recouvrement amiable.
+                  À transmettre au contentieux (hors périmètre de cette démo).
+                </div>
+              )}
+
+              {selected.nextAction.kind === "CALL_TASK" && !pendingCall && (
                 <button
-                  onClick={handleGenerate}
-                  disabled={loadingGenerate}
+                  onClick={handleCreateCallTask}
+                  disabled={callLoading}
                   className="w-full rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                 >
-                  {loadingGenerate ? "L'agent rédige…" : "Générer la prochaine relance"}
+                  {callLoading ? "L'agent prépare la fiche…" : "Créer une fiche d'appel"}
                 </button>
-              ) : (
+              )}
+
+              {pendingCall && (
+                <div className="flex flex-col gap-3">
+                  <div className="rounded-lg border border-lavande-struct bg-perle p-3 text-sm">
+                    <p className="mb-1 font-medium text-indigo-deep">Fiche d&apos;appel — à traiter par téléphone</p>
+                    <p className="mb-2 text-xs text-graphite/60">{pendingCall.reason}</p>
+                    <p className="whitespace-pre-line text-graphite/80">{pendingCall.talkingPoints}</p>
+                  </div>
+                  <div className="flex flex-col gap-2 rounded-lg border border-lavande-struct p-3">
+                    <span className="text-xs font-medium uppercase tracking-wide text-graphite/60">
+                      Résultat de l&apos;appel
+                    </span>
+                    <select
+                      value={callOutcome}
+                      onChange={(e) => setCallOutcome(e.target.value)}
+                      className="rounded-lg border border-lavande-struct p-2 text-sm text-graphite focus:border-violet-velos focus:outline-none"
+                    >
+                      {Object.entries(OUTCOME_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    {callOutcome === "PROMESSE_PAIEMENT" && (
+                      <input
+                        type="date"
+                        value={callPromisedDate}
+                        onChange={(e) => setCallPromisedDate(e.target.value)}
+                        className="rounded-lg border border-lavande-struct p-2 text-sm text-graphite focus:border-violet-velos focus:outline-none"
+                      />
+                    )}
+                    <textarea
+                      value={callNote}
+                      onChange={(e) => setCallNote(e.target.value)}
+                      placeholder="Note rapide sur l'appel (optionnel)"
+                      rows={2}
+                      className="rounded-lg border border-lavande-struct p-2 text-sm text-graphite focus:border-violet-velos focus:outline-none"
+                    />
+                    <button
+                      onClick={handleCompleteCall}
+                      disabled={callSubmitting}
+                      className="rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                    >
+                      {callSubmitting ? "Enregistrement…" : "Enregistrer le résultat"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {(selected.nextAction.kind === "EMAIL" || selected.nextAction.kind === "WHATSAPP") &&
+                !draft && (
+                  <button
+                    onClick={() => handleGenerate(selected.nextAction.kind as "EMAIL" | "WHATSAPP")}
+                    disabled={loadingGenerate}
+                    className="w-full rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                  >
+                    {loadingGenerate
+                      ? "L'agent rédige…"
+                      : `Générer ${selected.nextAction.kind === "WHATSAPP" ? "un message WhatsApp" : "un email"}`}
+                  </button>
+                )}
+
+              {draft && (
                 <div className="flex flex-col gap-2">
                   <span className="text-xs font-medium uppercase tracking-wide text-graphite/60">
-                    Ton : {TONE_LABELS[draftTone ?? ""] ?? draftTone} — modifiable avant envoi
+                    {CHANNEL_LABELS[draftChannel ?? ""] ?? draftChannel} · Ton :{" "}
+                    {TONE_LABELS[draftTone ?? ""] ?? draftTone} — modifiable avant envoi
                   </span>
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
-                    rows={8}
+                    rows={draftChannel === "WHATSAPP" ? 5 : 8}
                     className="w-full rounded-lg border border-lavande-struct p-3 text-sm text-graphite focus:border-violet-velos focus:outline-none"
                   />
                   <div className="flex gap-2">
@@ -253,6 +426,7 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
                       onClick={() => {
                         setDraft(null);
                         setDraftTone(null);
+                        setDraftChannel(null);
                       }}
                       className="rounded-lg border border-lavande-struct px-4 py-2 text-sm font-medium text-graphite transition hover:bg-perle"
                     >

@@ -8,15 +8,17 @@ datasource db {
 }
 
 model Client {
-  id              String    @id @default(cuid())
-  name            String
-  sector          String
-  contactName     String
-  contactEmail    String
-  behaviorNote    String // note de contexte utilisée par l'agent (ex: "client fiable, retard exceptionnel")
-  strategic       Boolean   @default(false)
-  invoices        Invoice[]
-  createdAt       DateTime  @default(now())
+  id                String    @id @default(cuid())
+  name              String
+  sector            String
+  contactName       String
+  contactEmail      String
+  contactPhone      String    @default("")
+  behaviorNote      String // note de contexte utilisée par l'agent (ex: "client fiable, retard exceptionnel")
+  strategic         Boolean   @default(false)
+  chronicLatePayer  Boolean   @default(false) // ignore les emails -> l'agent saute direct au canal WhatsApp
+  invoices          Invoice[]
+  createdAt         DateTime  @default(now())
 }
 
 model Invoice {
@@ -30,6 +32,7 @@ model Invoice {
   status        String     // EN_COURS | EN_RETARD | LITIGE | ECHEANCIER | PAYEE
   reminders     Reminder[]
   replies       ClientReply[]
+  callTasks     CallTask[]
   createdAt     DateTime   @default(now())
 }
 
@@ -37,11 +40,26 @@ model Reminder {
   id          String   @id @default(cuid())
   invoice     Invoice  @relation(fields: [invoiceId], references: [id])
   invoiceId   String
+  channel     String   @default("EMAIL") // EMAIL | WHATSAPP
   tone        String   // AMICALE | FERME | MISE_EN_DEMEURE
   content     String
   status      String   // BROUILLON | ENVOYEE_SIMULEE
   createdBy   String   // AGENT | HUMAIN
   sentAt      DateTime @default(now())
+}
+
+model CallTask {
+  id             String    @id @default(cuid())
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
+  invoiceId      String
+  reason         String // pourquoi cet appel est proposé (ex: "client stratégique, premier retard")
+  talkingPoints  String // fiche d'appel générée par l'agent
+  status         String    @default("A_FAIRE") // A_FAIRE | FAIT
+  outcome        String? // PROMESSE_PAIEMENT | NE_REPOND_PAS | CONTESTE | PAYE | AUTRE
+  outcomeNote    String?
+  promisedDate   DateTime?
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
 }
 
 model ClientReply {

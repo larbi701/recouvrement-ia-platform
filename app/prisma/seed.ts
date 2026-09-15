@@ -21,8 +21,10 @@ async function main() {
       sector: "Distribution alimentaire",
       contactName: "Yassine Belghiti",
       contactEmail: "y.belghiti@atlas-negoce.ma",
+      contactPhone: "+212 6 61 22 33 44",
       behaviorNote: "Client fiable, paie habituellement à temps, premier retard depuis 2 ans.",
       strategic: false,
+      chronicLatePayer: false,
     },
   });
   const atlasInvoice = await prisma.invoice.create({
@@ -38,6 +40,7 @@ async function main() {
   await prisma.reminder.create({
     data: {
       invoiceId: atlasInvoice.id,
+      channel: "EMAIL",
       tone: "AMICALE",
       content:
         "Bonjour Yassine, un petit rappel amical : la facture FAC-2026-0142 de 18 000 MAD est arrivée à échéance il y a quelques jours. Peut-être un simple oubli — dites-nous si un justificatif de paiement est déjà en route.",
@@ -54,8 +57,10 @@ async function main() {
       sector: "Fournitures industrielles",
       contactName: "Rachid Amrani",
       contactEmail: "comptabilite@tanger-fournitures.ma",
+      contactPhone: "+212 6 62 33 44 55",
       behaviorNote: "Retards fréquents sur les 12 derniers mois, ne répond pas aux relances email.",
       strategic: false,
+      chronicLatePayer: true, // -> l'agent saute l'email et démarre directement sur WhatsApp
     },
   });
   const tangerInvoice = await prisma.invoice.create({
@@ -68,10 +73,15 @@ async function main() {
       status: "EN_RETARD",
     },
   });
-  for (const [i, days] of [55, 35, 15].entries()) {
+  for (const [i, { days, channel }] of [
+    { days: 55, channel: "WHATSAPP" },
+    { days: 35, channel: "WHATSAPP" },
+    { days: 15, channel: "EMAIL" },
+  ].entries()) {
     await prisma.reminder.create({
       data: {
         invoiceId: tangerInvoice.id,
+        channel,
         tone: i === 0 ? "AMICALE" : "FERME",
         content: `Relance ${i + 1} envoyée concernant la facture FAC-2026-0098 (42 000 MAD), toujours sans réponse.`,
         status: "ENVOYEE_SIMULEE",
@@ -80,6 +90,19 @@ async function main() {
       },
     });
   }
+  await prisma.callTask.create({
+    data: {
+      invoiceId: tangerInvoice.id,
+      reason: "Client chronique — aucune réponse sur WhatsApp après 3 semaines, tentative d'appel avant durcissement du ton.",
+      talkingPoints:
+        "1. Rappeler la facture FAC-2026-0098 (42 000 MAD) et l'ancienneté du retard.\n2. Demander s'il y a un blocage particulier (trésorerie, litige, interlocuteur absent).\n3. Proposer un point sur un éventuel échéancier si besoin.\n4. Fixer une date ferme de rappel si pas de réponse immédiate.",
+      status: "FAIT",
+      outcome: "NE_REPOND_PAS",
+      outcomeNote: "Deux tentatives, messagerie à chaque fois. Un message vocal a été laissé.",
+      createdAt: daysAgo(30),
+      completedAt: daysAgo(30),
+    },
+  });
 
   // 3. Client qui demande un échéancier
   const cosmetiques = await prisma.client.create({
@@ -88,8 +111,10 @@ async function main() {
       sector: "Cosmétique / distribution",
       contactName: "Salma Idrissi",
       contactEmail: "s.idrissi@cosmetiques-sud.ma",
+      contactPhone: "+212 6 63 44 55 66",
       behaviorNote: "Bon payeur historiquement, traverse une tension de trésorerie ce trimestre.",
       strategic: false,
+      chronicLatePayer: false,
     },
   });
   const cosmetiquesInvoice = await prisma.invoice.create({
@@ -106,6 +131,7 @@ async function main() {
     await prisma.reminder.create({
       data: {
         invoiceId: cosmetiquesInvoice.id,
+        channel: "EMAIL",
         tone: "FERME",
         content: "Relance concernant la facture FAC-2026-0117 (65 000 MAD), échéance dépassée.",
         status: "ENVOYEE_SIMULEE",
@@ -134,8 +160,10 @@ async function main() {
       sector: "BTP",
       contactName: "Hicham Ouazzani",
       contactEmail: "h.ouazzani@btprif.ma",
+      contactPhone: "+212 6 64 55 66 77",
       behaviorNote: "Conteste une partie de la commande — litige en cours de clarification.",
       strategic: false,
+      chronicLatePayer: false,
     },
   });
   const btpInvoice = await prisma.invoice.create({
@@ -151,6 +179,7 @@ async function main() {
   await prisma.reminder.create({
     data: {
       invoiceId: btpInvoice.id,
+      channel: "EMAIL",
       tone: "AMICALE",
       content: "Relance concernant la facture FAC-2026-0155 (120 000 MAD), échéance dépassée de 28 jours.",
       status: "ENVOYEE_SIMULEE",
@@ -177,9 +206,11 @@ async function main() {
       sector: "Industrie / équipement",
       contactName: "Nabil Cherkaoui",
       contactEmail: "n.cherkaoui@meknes-industrie.ma",
+      contactPhone: "+212 6 65 66 77 88",
       behaviorNote:
-        "Aucune réponse depuis plus de 110 jours malgré 4 relances — approche le plafond légal de 120 jours (loi 69-21). Ancien litige déjà résolu sans incident.",
+        "Aucune réponse depuis plus de 110 jours malgré 4 relances et un appel resté sans réponse — approche le plafond légal de 120 jours (loi 69-21). Ancien litige déjà résolu sans incident.",
       strategic: false,
+      chronicLatePayer: true,
     },
   });
   const meknesInvoice = await prisma.invoice.create({
@@ -192,10 +223,16 @@ async function main() {
       status: "EN_RETARD",
     },
   });
-  for (const [i, days] of [90, 65, 40, 15].entries()) {
+  for (const [i, { days, channel }] of [
+    { days: 90, channel: "WHATSAPP" },
+    { days: 65, channel: "WHATSAPP" },
+    { days: 40, channel: "EMAIL" },
+    { days: 15, channel: "EMAIL" },
+  ].entries()) {
     await prisma.reminder.create({
       data: {
         invoiceId: meknesInvoice.id,
+        channel,
         tone: i < 2 ? "FERME" : "MISE_EN_DEMEURE",
         content: `Relance ${i + 1} sur la facture FAC-2026-0071 (28 000 MAD) — toujours sans réponse.`,
         status: "ENVOYEE_SIMULEE",
@@ -204,6 +241,19 @@ async function main() {
       },
     });
   }
+  await prisma.callTask.create({
+    data: {
+      invoiceId: meknesInvoice.id,
+      reason: "Silence total après 2 relances WhatsApp — tentative d'appel avant passage au ton dernier avertissement.",
+      talkingPoints:
+        "1. Rappeler la facture FAC-2026-0071 (28 000 MAD) et les 65 jours de retard à ce moment-là.\n2. Vérifier qu'il n'y a pas de litige non signalé.\n3. Demander un engagement de paiement avec une date précise.\n4. Prévenir que sans retour, la prochaine communication sera un dernier avertissement écrit.",
+      status: "FAIT",
+      outcome: "NE_REPOND_PAS",
+      outcomeNote: "Aucune réponse, ligne directe injoignable à deux reprises.",
+      createdAt: daysAgo(55),
+      completedAt: daysAgo(55),
+    },
+  });
 
   // 6. Gros client stratégique, retard tout juste détecté
   const alAmal = await prisma.client.create({
@@ -212,11 +262,13 @@ async function main() {
       sector: "Grande distribution",
       contactName: "Fatima-Zahra Bennis",
       contactEmail: "fz.bennis@alamal-distribution.ma",
+      contactPhone: "+212 6 66 77 88 99",
       behaviorNote: "Client stratégique, gros volume d'affaires récurrent, premier retard détecté aujourd'hui.",
       strategic: true,
+      chronicLatePayer: false,
     },
   });
-  await prisma.invoice.create({
+  const alAmalInvoice = await prisma.invoice.create({
     data: {
       clientId: alAmal.id,
       reference: "FAC-2026-0163",
@@ -224,6 +276,15 @@ async function main() {
       issueDate: daysAgo(78),
       dueDate: daysAgo(18),
       status: "EN_RETARD",
+    },
+  });
+  await prisma.callTask.create({
+    data: {
+      invoiceId: alAmalInvoice.id,
+      reason: "Client stratégique — premier retard détecté : contact téléphonique direct privilégié plutôt qu'une relance automatique, pour préserver la relation.",
+      talkingPoints:
+        "1. Ouvrir sur la relation commerciale, pas sur l'impayé en premier.\n2. Mentionner la facture FAC-2026-0163 (250 000 MAD) et les 18 jours de retard.\n3. Demander s'il s'agit d'un simple délai de traitement interne.\n4. Proposer de reprogrammer un point si un interlocuteur plus adapté est nécessaire.",
+      status: "A_FAIRE",
     },
   });
 
