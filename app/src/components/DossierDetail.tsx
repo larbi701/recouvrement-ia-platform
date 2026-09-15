@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { WorklistItem } from "@/lib/types";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { buildActivityFeed } from "@/lib/activity";
+import { buildMailtoUrl, buildWhatsappUrl, buildTelUrl } from "@/lib/deeplinks";
 
 const TONE_LABELS: Record<string, string> = {
   AMICALE: "Amicale",
@@ -79,6 +80,14 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
 
   async function handleSend() {
     if (!draft || !draftTone || !draftChannel) return;
+    // Ouvre le vrai canal (messagerie / WhatsApp) immédiatement, dans le même geste que le clic —
+    // sinon le navigateur bloque l'ouverture comme un pop-up une fois qu'on a attendu une réponse réseau.
+    if (draftChannel === "WHATSAPP") {
+      window.open(buildWhatsappUrl(item.contactPhone, draft), "_blank", "noopener");
+    } else {
+      window.open(buildMailtoUrl(item.contactEmail, draft), "_blank");
+    }
+
     setLoadingSend(true);
     try {
       const res = await fetch("/api/reminders/send", {
@@ -94,7 +103,9 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
       });
       if (!res.ok) throw new Error("Échec de l'envoi");
       setConfirmation(
-        `${draftChannel === "WHATSAPP" ? "Message WhatsApp" : "Email"} envoyé ✓ (simulation — traçabilité enregistrée)`
+        draftChannel === "WHATSAPP"
+          ? "WhatsApp ouvert avec le message prêt — envoie-le depuis l'onglet qui vient de s'ouvrir. Traçabilité enregistrée ✓"
+          : "Ta messagerie s'est ouverte avec l'email prêt — il ne reste qu'à cliquer envoyer. Traçabilité enregistrée ✓"
       );
       setDraft(null);
       setDraftTone(null);
@@ -290,6 +301,12 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
                 <p className="mb-1 font-medium text-indigo-deep">Fiche d&apos;appel — à traiter par téléphone</p>
                 <p className="mb-2 text-xs text-graphite/60">{pendingCall.reason}</p>
                 <p className="whitespace-pre-line text-graphite/80">{pendingCall.talkingPoints}</p>
+                <a
+                  href={buildTelUrl(item.contactPhone)}
+                  className="mt-3 inline-block rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                >
+                  📞 Appeler {item.contactPhone} maintenant
+                </a>
               </div>
               <div className="flex flex-col gap-2 rounded-lg border border-lavande-struct p-3">
                 <span className="text-xs font-medium uppercase tracking-wide text-graphite/60">
@@ -350,6 +367,11 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
                 {CHANNEL_LABELS[draftChannel ?? ""] ?? draftChannel} · Ton :{" "}
                 {TONE_LABELS[draftTone ?? ""] ?? draftTone} — modifiable avant envoi
               </span>
+              <p className="text-xs text-graphite/50">
+                {draftChannel === "WHATSAPP"
+                  ? "Envoyer ouvre WhatsApp avec ce message déjà écrit dedans."
+                  : "Envoyer ouvre ta messagerie avec cet email déjà écrit dedans."}
+              </p>
               <textarea
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
@@ -362,7 +384,11 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
                   disabled={loadingSend}
                   className="flex-1 rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                 >
-                  {loadingSend ? "Envoi…" : "Envoyer"}
+                  {loadingSend
+                    ? "Ouverture…"
+                    : draftChannel === "WHATSAPP"
+                    ? "Ouvrir WhatsApp et envoyer"
+                    : "Ouvrir l'email et envoyer"}
                 </button>
                 <button
                   onClick={() => {
