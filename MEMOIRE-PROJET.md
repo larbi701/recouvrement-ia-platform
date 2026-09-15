@@ -348,3 +348,29 @@ L'utilisateur a demandé ce qu'il faudrait pour qu'un agent IA passe lui-même l
 - **Testé en direct** : réponse simulée "c'est payé, viré hier par virement" → classée correctement en **Confirmation de paiement**, résumé exact, action proposée cohérente (suspendre les relances, vérifier sous 3-5 jours ouvrables).
 
 **Bilan mis à jour sur les 3 agents** : Rédacteur ✅ réel, Analyste ⚠️ formule de calcul (assumé, pas un mensonge), Négociateur ✅ réel désormais. Les 3 briques automatisées du workflow sont maintenant soit de la vraie IA générative, soit une règle métier explicite et assumée comme telle — plus d'écart caché entre le discours et le code.
+
+## 24. Restructuration UX — d'un tableau de bord à un agent qui travaille (2026-09-15)
+
+Retour direct de l'utilisateur : la démo "sonne comme un tableau de bord, pas comme un agent qui exécute des tâches." Il a pointé l'interface de l'autre projet sur cette machine (NAIOM / Léa, `localhost:3000/agents/createur-contenu`) comme repère : l'agent y est présenté comme une collègue — avatar, statut "En ligne", rôle, ce qu'elle sait faire — avant même d'entrer dans le chat. Vision produit VELOS IA rappelée à cette occasion : une plateforme d'affichage (SaaS) + un orchestrateur d'agents IA + des agents qui exécutent des workflows de A à Z, pas juste des boutons qui appellent une API.
+
+**Deux changements structurels appliqués :**
+
+### a) Trois écrans au lieu d'un, logique d'entonnoir par niveau de criticité
+- **`/` (Cockpit)** : carte de présentation de l'agent (voir c), KPI, puis un **entonnoir cliquable** en 4 niveaux — Relance automatique → Appel humain requis → Réponse client à traiter → Urgent/plafond légal — chacun menant à la liste filtrée correspondante. Termine par le fil d'activité global.
+- **`/dossiers?stage=...`** : liste des dossiers filtrée par niveau (composant `DossierCards`), avec un fil d'Ariane vers le Cockpit.
+- **`/dossiers/[id]`** : écran dédié à un dossier (composant `DossierDetail`) — plus un panneau latéral étriqué, un écran plein qui rassemble raisonnement, réponse client, action recommandée, et le journal d'activité propre à ce dossier.
+- Logique de décision (`computeNextAction`) et mapping DB→UI (`buildWorklistItem`) factorisés dans `src/lib/` pour être partagés par les 3 écrans sans dupliquer le code.
+
+### b) Un fil d'activité unifié (`src/lib/activity.ts` + `ActivityFeed.tsx`)
+Reconstitue un journal chronologique à partir des relances, fiches d'appel et réponses classées (pas de nouvelle table — recomposé à la volée). Affiché en global sur le Cockpit et par dossier sur l'écran détail, avec icônes et "il y a X jours" — c'est ce qui donne la sensation d'un agent qui travaille en continu, pas d'un tableau statique qu'on interroge.
+
+### c) Agent personnifié — "Yasmine"
+Inspiré directement de la carte de présentation de Léa (NAIOM) : `AgentProfileCard.tsx` affiche un avatar (initiale sur dégradé indigo→violet — pas d'illustration custom, à améliorer plus tard si besoin), un statut "En ligne", un rôle ("Agent recouvrement — CASH"), un nom ("Yasmine"), et une description d'une ligne. Le nom infuse le reste des textes (raisonnement, journal, états de chargement — "Yasmine rédige…", "Yasmine prépare la fiche…") pour une expérience cohérente de bout en bout plutôt qu'un mélange de "l'agent" impersonnel et de boutons.
+**Nom provisoire** — facile à changer si l'utilisateur préfère un autre prénom ou un nom lié à la marque.
+
+### d) Logo
+Correction demandée : la ligne reliant le nœud haut-droit au nœud bas était en violet sur fond indigo (mauvaise lecture de la charte) — repassée en blanc comme les deux autres lignes. Seul le nœud bas reste violet (l'accent signature).
+
+**Fichier supprimé** : `src/components/Worklist.tsx` (l'ancien écran unique), remplacé par `DossierCards.tsx` + `DossierDetail.tsx` + `Funnel.tsx` + `AgentProfileCard.tsx` + `ActivityFeed.tsx` + `AppHeader.tsx`.
+
+**Vérifié en direct** : navigation Cockpit → niveau "Urgent/plafond légal" → dossier Meknès Industrie, journal d'activité du dossier complet et cohérent (7 événements, du plus récent au plus ancien), aucune erreur serveur.
