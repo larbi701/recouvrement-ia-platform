@@ -338,3 +338,13 @@ L'utilisateur a demandé ce qu'il faudrait pour qu'un agent IA passe lui-même l
 - **Conformité** : consentement à l'enregistrement des appels, hébergement des données vocales hors Maroc (recoupe le point juridique déjà en suspens, §1bis), cadre ANRT pour la téléphonie.
 
 **Décision (2026-09-15)** : reporté à une phase séparée, après le pilote, avec son propre budget — casse la contrainte "0€" de la démo actuelle. Ce qui est construit à la place (§21) : l'IA prépare la fiche d'appel, un humain appelle et saisit le résultat. C'est le comportement réaliste d'un outil de collections qui n'a pas encore d'agent vocal, pas un pis-aller honteux.
+
+## 23. Agent Négociateur — rendu réel (2026-09-15)
+
+Écart comblé : les réponses clients du scénario initial (Cosmétiques du Sud, BTP Rif Construction) restent pré-écrites dans le seed (ce sont des données d'amorçage, comme les relances initiales) — mais **toute nouvelle réponse passe maintenant par un vrai appel à Claude**.
+
+- **Route** `/api/replies/classify` : reçoit le texte d'une réponse client, appelle Claude (format JSON strict), classe l'intention (DEMANDE_DELAI / CONTESTATION / CONFIRMATION / AUTRE), résume, propose une action — avec des règles différentes par intention (ex. jamais de relance automatique en cas de contestation).
+- **UI** : un lien "Simuler une réponse client (test de l'agent Négociateur)" apparaît dans le panneau de détail pour tout dossier sans réponse en attente — permet de taper une réponse fictive en direct pendant une démo et de voir l'agent la traiter en temps réel, plutôt que de se limiter aux 2 cas pré-chargés. C'est aussi la réponse au point "next steps" évoqué plus tôt (simulateur de réponse en direct, plus impressionnant qu'un scénario figé).
+- **Testé en direct** : réponse simulée "c'est payé, viré hier par virement" → classée correctement en **Confirmation de paiement**, résumé exact, action proposée cohérente (suspendre les relances, vérifier sous 3-5 jours ouvrables).
+
+**Bilan mis à jour sur les 3 agents** : Rédacteur ✅ réel, Analyste ⚠️ formule de calcul (assumé, pas un mensonge), Négociateur ✅ réel désormais. Les 3 briques automatisées du workflow sont maintenant soit de la vraie IA générative, soit une règle métier explicite et assumée comme telle — plus d'écart caché entre le discours et le code.

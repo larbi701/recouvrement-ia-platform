@@ -68,6 +68,10 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
   const [callPromisedDate, setCallPromisedDate] = useState("");
   const [callSubmitting, setCallSubmitting] = useState(false);
 
+  const [showReplySimulator, setShowReplySimulator] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [replySubmitting, setReplySubmitting] = useState(false);
+
   const selected = useMemo(
     () => items.find((i) => i.invoiceId === selectedId) ?? null,
     [items, selectedId]
@@ -84,6 +88,29 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
     setCallNote("");
     setCallPromisedDate("");
     setCallOutcome("PROMESSE_PAIEMENT");
+    setShowReplySimulator(false);
+    setReplyText("");
+  }
+
+  async function handleSimulateReply() {
+    if (!selected || !replyText.trim()) return;
+    setReplySubmitting(true);
+    setConfirmation(null);
+    try {
+      const res = await fetch("/api/replies/classify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId: selected.invoiceId, content: replyText }),
+      });
+      if (!res.ok) throw new Error("Échec de la classification");
+      setReplyText("");
+      setShowReplySimulator(false);
+      router.refresh();
+    } catch {
+      setConfirmation("Erreur — vérifie que ta clé API Claude est bien renseignée dans .env.local");
+    } finally {
+      setReplySubmitting(false);
+    }
   }
 
   async function handleGenerate(channel: "EMAIL" | "WHATSAPP") {
@@ -277,6 +304,50 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
                     <span className="font-medium text-graphite">Action proposée : </span>
                     {selected.replies[0].proposedAction}
                   </p>
+                )}
+              </div>
+            )}
+
+            {selected.replies.length === 0 && (
+              <div className="mt-4">
+                {!showReplySimulator ? (
+                  <button
+                    onClick={() => setShowReplySimulator(true)}
+                    className="text-sm font-medium text-azur underline decoration-azur/40 underline-offset-2 hover:text-indigo-deep"
+                  >
+                    Simuler une réponse client (test de l&apos;agent Négociateur)
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2 rounded-lg border border-azur/30 bg-azur/5 p-3">
+                    <span className="text-xs font-medium uppercase tracking-wide text-azur">
+                      Réponse simulée du client — classée en direct par l&apos;agent
+                    </span>
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      rows={3}
+                      placeholder="Ex : Bonjour, on a un souci de trésorerie ce mois-ci, on peut payer en deux fois ?"
+                      className="rounded-lg border border-lavande-struct bg-white p-2 text-sm text-graphite focus:border-violet-velos focus:outline-none"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSimulateReply}
+                        disabled={replySubmitting || !replyText.trim()}
+                        className="flex-1 rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+                      >
+                        {replySubmitting ? "L'agent analyse…" : "Envoyer cette réponse (simulation)"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowReplySimulator(false);
+                          setReplyText("");
+                        }}
+                        className="rounded-lg border border-lavande-struct px-4 py-2 text-sm font-medium text-graphite transition hover:bg-perle"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
