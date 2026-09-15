@@ -5,7 +5,7 @@ export function AppHeader({ breadcrumb }: { breadcrumb?: { label: string; href?:
   return (
     <header className="border-b border-lavande-struct bg-white">
       <div className="mx-auto flex max-w-6xl items-center px-6 py-5">
-        <Link href="/">
+        <Link href="/cockpit">
           <LogoWordmark />
         </Link>
         <span className="ml-3 rounded-full bg-lavande-struct px-2 py-0.5 text-xs font-medium text-indigo-deep">

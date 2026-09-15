@@ -21,7 +21,12 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader
-        breadcrumb={[{ label: "Cockpit", href: "/" }, { label: "Dossiers", href: "/dossiers" }, { label: item.clientName }]}
+        breadcrumb={[
+          { label: "Yasmine", href: "/" },
+          { label: "Cockpit", href: "/cockpit" },
+          { label: "Dossiers", href: "/dossiers" },
+          { label: item.clientName },
+        ]}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <DossierDetail item={item} />

@@ -1,51 +1,117 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
-import { buildActivityFeed } from "@/lib/activity";
-import { KpiHeader } from "@/components/KpiHeader";
-import { Funnel } from "@/components/Funnel";
-import { ActivityFeed } from "@/components/ActivityFeed";
 import { AppHeader } from "@/components/AppHeader";
-import { AgentProfileCard } from "@/components/AgentProfileCard";
 
 export const dynamic = "force-dynamic";
 
-export default async function Cockpit() {
+const CAPABILITIES = [
+  {
+    icon: "🧭",
+    title: "Analyse & priorise",
+    description:
+      "Calcule un score de risque sur chaque facture en retard (ancienneté, montant, historique) et construit la liste à traiter aujourd'hui — sans qu'un humain ait à trier manuellement.",
+  },
+  {
+    icon: "✉️",
+    title: "Rédige les relances",
+    description:
+      "Email ou WhatsApp selon la situation, ton amical puis ferme puis dernier avertissement — jamais un template générique, toujours le bon contexte client.",
+  },
+  {
+    icon: "📞",
+    title: "Prépare les appels",
+    description:
+      "Quand un contact humain est plus efficace (client stratégique, silence prolongé), elle prépare la fiche d'appel et crée la tâche — l'humain appelle, elle garde la trace.",
+  },
+  {
+    icon: "🧠",
+    title: "Traite les réponses",
+    description:
+      "Classe l'intention du client (demande de délai, contestation, confirmation), résume, et propose une action — sans jamais relancer automatiquement en cas de litige.",
+  },
+];
+
+export default async function Presentation() {
   const invoices = await prisma.invoice.findMany({
     include: { client: true, reminders: true, replies: true, callTasks: true },
-    orderBy: { dueDate: "asc" },
   });
-  const items = invoices.map(buildWorklistItem).sort((a, b) => b.score - a.score);
+  const items = invoices.map(buildWorklistItem);
   const totalOverdueMad = items.reduce((sum, i) => sum + i.amountMad, 0);
-  const activity = buildActivityFeed(items, 8);
+  const totalActions = items.reduce(
+    (sum, i) => sum + i.reminders.length + i.callTasks.length + i.replies.length,
+    0
+  );
+
+  const stats = [
+    { label: "Dossiers sous gestion", value: items.length.toString() },
+    { label: "MAD en retard suivis", value: `${totalOverdueMad.toLocaleString("fr-FR")}` },
+    { label: "Actions menées par Yasmine", value: totalActions.toString() },
+  ];
 
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader />
-      <KpiHeader totalOverdueMad={totalOverdueMad} dossierCount={items.length} />
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-16">
-        <div className="pt-6">
-          <AgentProfileCard />
+      <main className="mx-auto w-full max-w-4xl flex-1 px-6 pb-16">
+        <div className="flex flex-col items-center pt-12 text-center">
+          <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-indigo-deep to-violet-velos text-4xl font-bold text-white">
+            Y
+          </div>
+
+          <div className="mt-4 flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full bg-lavande px-2.5 py-1 text-xs font-medium text-indigo-deep">
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-velos" />
+              En ligne
+            </span>
+            <span className="text-xs font-medium uppercase tracking-[0.08em] text-corail">
+              Agent recouvrement — CASH · VELOS IA
+            </span>
+          </div>
+
+          <h1 className="mt-3 text-5xl font-bold tracking-tight text-indigo-deep">Yasmine</h1>
+
+          <p className="mt-3 max-w-xl text-lg text-graphite/80">
+            Relances email et WhatsApp, fiches d&apos;appel, réponses client classées — le recouvrement amiable B2B,
+            du premier rappel au dernier avertissement.
+          </p>
+
+          <p className="mt-3 max-w-lg text-sm text-graphite/60">
+            Calibrée sur le marché marocain (délais de paiement, plafond légal de 120 jours — loi 69-21), elle
+            travaille 24/7 sur tout le portefeuille pendant que l&apos;équipe se concentre sur les appels et les
+            négociations qui comptent vraiment.
+          </p>
+
+          <Link
+            href="/cockpit"
+            className="mt-8 rounded-lg bg-indigo-deep px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            Voir Yasmine au travail →
+          </Link>
         </div>
 
-        <div className="pt-6">
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">
-            Où en sont vos dossiers
-          </h2>
-          <p className="mb-3 text-xs text-graphite/50">
-            Clique sur un niveau pour voir les dossiers concernés — du parcours automatique au plus critique.
-          </p>
-          <Funnel items={items} />
+        <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {stats.map((stat) => (
+            <div key={stat.label} className="rounded-xl border border-lavande-struct bg-white p-4 text-center">
+              <p className="text-2xl font-bold text-violet-velos">{stat.value}</p>
+              <p className="text-xs text-graphite/60">{stat.label}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="mt-8 rounded-xl border border-lavande-struct bg-white p-5">
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">
-            Activité de Yasmine
+        <div className="mt-12">
+          <h2 className="mb-4 text-center text-sm font-semibold uppercase tracking-wide text-graphite/60">
+            Ce qu&apos;elle sait faire
           </h2>
-          <p className="mb-2 text-xs text-graphite/50">
-            Ce que Yasmine (et l&apos;humain, en relais) vient de faire sur le portefeuille.
-          </p>
-          <ActivityFeed events={activity} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {CAPABILITIES.map((cap) => (
+              <div key={cap.title} className="rounded-xl border border-lavande-struct bg-white p-4">
+                <div className="mb-2 text-2xl">{cap.icon}</div>
+                <h3 className="mb-1 font-semibold text-indigo-deep">{cap.title}</h3>
+                <p className="text-sm text-graphite/70">{cap.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     </div>

@@ -25,7 +25,11 @@ export default async function DossiersPage({
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader
-        breadcrumb={[{ label: "Cockpit", href: "/" }, { label: stageDef ? stageDef.label : "Tous les dossiers" }]}
+        breadcrumb={[
+          { label: "Yasmine", href: "/" },
+          { label: "Cockpit", href: "/cockpit" },
+          { label: stageDef ? stageDef.label : "Tous les dossiers" },
+        ]}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         {stageDef && <p className="mb-4 text-sm text-graphite/60">{stageDef.description}</p>}
