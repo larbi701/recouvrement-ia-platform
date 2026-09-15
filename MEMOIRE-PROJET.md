@@ -384,3 +384,14 @@ Demande : une page de présentation de l'agent, comme la page d'accueil de Léa 
 - Composant `AgentProfileCard.tsx` (la petite carte utilisée provisoirement sur le Cockpit) supprimé — remplacé par cette page dédiée, plus complète.
 
 **Usage pour la démo commerciale** : cette page est maintenant le point d'entrée naturel — elle sert le temps 1+2 du script de démo (§15a, douleur/promesse) avant de cliquer vers le Cockpit pour la preuve en action (temps 3).
+
+## 26. "Je ne vois pas d'agentique" — passer du log simulé à une vraie action (2026-09-15)
+
+Retour direct : contrairement aux agents NAIOM (qui produisent un livrable concret après un plan validé), cliquer "Envoyer" chez nous n'écrivait qu'une ligne en base — aucune action réelle ne se produisait dans le monde. Corrigé sans casser la contrainte "0€" :
+
+- **`src/lib/deeplinks.ts`** : construit une vraie URL `mailto:` (avec objet + corps extraits du brouillon) et une vraie URL `wa.me` (WhatsApp, message prérempli), plus un lien `tel:` pour l'appel.
+- **`DossierDetail.tsx`** : au clic sur "Envoyer", le vrai outil s'ouvre (messagerie ou WhatsApp) avec le message de Yasmine déjà écrit dedans — l'humain n'a plus qu'à cliquer envoyer dans son propre outil. Le log en base (traçabilité) continue en parallèle. Le bouton "Appeler maintenant" sur la fiche d'appel ouvre un vrai lien `tel:`.
+- **Important technique** : l'ouverture doit se faire de façon synchrone dans le gestionnaire de clic (avant tout `await`), sinon le navigateur bloque le pop-up. Vérifié : dans les tests automatisés (clics simulés par l'assistant), le navigateur bloque volontairement le pop-up ("popups open only from the user's own clicks") — c'est attendu et confirme que le mécanisme est correctement déclenché ; avec un vrai clic humain, WhatsApp/la messagerie s'ouvrent normalement.
+- **Limite assumée** : les numéros/emails du scénario démo sont fictifs (domaines inventés) — l'ouverture de la messagerie/WhatsApp fonctionne quand même (c'est le comportement du navigateur/téléphone qui s'ouvre, pas une vérification que le destinataire existe). Avec le pilote réel (vrais contacts), ça enverra pour de vrai.
+
+**Reste un écart avec le modèle NAIOM** (plan proposé → validation → livrable produit) : notre flux est "génère → modifie → ouvre le vrai canal", en une étape, pas un plan explicite validé avant exécution. Pas corrigé pour l'instant — à évaluer si l'utilisateur le demande explicitement, ce serait un changement de UX plus lourd (étape de plan visible avant génération).
