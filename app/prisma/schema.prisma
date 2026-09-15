@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id              String    @id @default(cuid())
+  name            String
+  sector          String
+  contactName     String
+  contactEmail    String
+  behaviorNote    String // note de contexte utilisée par l'agent (ex: "client fiable, retard exceptionnel")
+  strategic       Boolean   @default(false)
+  invoices        Invoice[]
+  createdAt       DateTime  @default(now())
+}
+
+model Invoice {
+  id            String     @id @default(cuid())
+  client        Client     @relation(fields: [clientId], references: [id])
+  clientId      String
+  reference     String
+  amountMad     Int
+  issueDate     DateTime
+  dueDate       DateTime
+  status        String     // EN_COURS | EN_RETARD | LITIGE | ECHEANCIER | PAYEE
+  reminders     Reminder[]
+  replies       ClientReply[]
+  createdAt     DateTime   @default(now())
+}
+
+model Reminder {
+  id          String   @id @default(cuid())
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceId   String
+  tone        String   // AMICALE | FERME | MISE_EN_DEMEURE
+  content     String
+  status      String   // BROUILLON | ENVOYEE_SIMULEE
+  createdBy   String   // AGENT | HUMAIN
+  sentAt      DateTime @default(now())
+}
+
+model ClientReply {
+  id               String   @id @default(cuid())
+  invoice          Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceId        String
+  content          String
+  classifiedIntent String?  // DEMANDE_DELAI | CONTESTATION | CONFIRMATION | AUTRE
+  agentSummary     String?
+  proposedAction   String?
+  receivedAt       DateTime @default(now())
+}
