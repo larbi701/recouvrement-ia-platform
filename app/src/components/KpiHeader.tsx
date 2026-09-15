@@ -3,10 +3,10 @@ type Props = {
   dossierCount: number;
 };
 
-function SimulationTag() {
+function SimulationTag({ title }: { title: string }) {
   return (
     <span
-      title="Scénario illustratif pour la démo — pas un résultat mesuré chez un client réel."
+      title={title}
       className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200"
     >
       Simulation
@@ -21,24 +21,29 @@ export function KpiHeader({ totalOverdueMad, dossierCount }: Props) {
       value: `${totalOverdueMad.toLocaleString("fr-FR")} MAD`,
       sub: `${dossierCount} dossiers en cours`,
       simulated: false,
+      tooltip: "",
     },
     {
       label: "Délai moyen de recouvrement (DSO)",
-      value: "52 → 34 jours",
-      sub: "-35% grâce à l'automatisation",
+      value: "88 → 58 jours",
+      sub: "-34% grâce à l'automatisation",
       simulated: true,
+      tooltip:
+        "88 jours = délai clients moyen des PME marocaines en 2024 (Inforisk, en baisse depuis 94 jours en 2023). 58 jours = projection avec l'agent, sur la base d'une réduction de DSO du même ordre que celle documentée par Growfin (-34%).",
     },
     {
       label: "Effort manuel réduit",
       value: "55%",
       sub: "temps de relance économisé",
       simulated: true,
+      tooltip: "Scénario illustratif pour la démo — pas un résultat mesuré chez un client réel.",
     },
     {
       label: "Récupéré ce mois grâce à l'agent",
       value: "96 500 MAD",
       sub: "sur les dossiers relancés",
       simulated: true,
+      tooltip: "Scénario illustratif pour la démo — pas un résultat mesuré chez un client réel.",
     },
   ];
 
@@ -51,7 +56,7 @@ export function KpiHeader({ totalOverdueMad, dossierCount }: Props) {
               <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                 {tile.label}
               </span>
-              {tile.simulated && <SimulationTag />}
+              {tile.simulated && <SimulationTag title={tile.tooltip} />}
             </div>
             <div className="text-2xl font-semibold tracking-tight text-slate-900">
               {tile.value}
@@ -60,6 +65,10 @@ export function KpiHeader({ totalOverdueMad, dossierCount }: Props) {
           </div>
         ))}
       </div>
+      <p className="mx-auto max-w-6xl px-6 pb-4 text-[11px] text-slate-400">
+        Délais de paiement calibrés sur le marché marocain — moyenne PME 2024 : Inforisk · plafond légal entre
+        entreprises : 120 jours (loi 69-21).
+      </p>
     </div>
   );
 }

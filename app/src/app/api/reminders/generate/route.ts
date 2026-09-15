@@ -34,6 +34,11 @@ export async function POST(req: Request) {
     hasUnresolvedReply: invoice.replies.length > 0,
   });
 
+  const legalContext =
+    daysOverdue >= 105
+      ? `\n- Contexte légal marocain : ce retard approche ou dépasse le plafond légal de 120 jours entre partenaires commerciaux fixé par la loi 69-21. Tu peux le mentionner brièvement, de façon factuelle (pas comme une menace), pour appuyer le sérieux de la situation.`
+      : "";
+
   const prompt = `Tu es l'agent de recouvrement amiable de "Meridian Distribution", une PME marocaine (B2B). Rédige UNE relance par email en français, professionnelle et humaine, jamais agressive.
 
 Contexte :
@@ -42,7 +47,7 @@ Contexte :
 - Facture : ${invoice.reference}, montant ${invoice.amountMad.toLocaleString("fr-FR")} MAD
 - Retard actuel : ${daysOverdue} jours
 - Nombre de relances déjà envoyées : ${invoice.reminders.length}
-- Ton attendu : ${toneInstruction}
+- Ton attendu : ${toneInstruction}${legalContext}
 
 Règles strictes :
 - On est encore dans le recouvrement AMIABLE, pas dans le contentieux : ne jamais mentionner "porter plainte" (terme de droit pénal, inapproprié pour un impayé commercial) ni promettre une action judiciaire précise. Si une escalade doit être évoquée (ton "dernier avertissement" uniquement), parle d'une "mise en demeure formelle" et d'une possible "procédure de recouvrement", sans détailler davantage.

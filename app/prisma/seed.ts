@@ -30,8 +30,8 @@ async function main() {
       clientId: atlas.id,
       reference: "FAC-2026-0142",
       amountMad: 18_000,
-      issueDate: daysAgo(38),
-      dueDate: daysAgo(8),
+      issueDate: daysAgo(72), // délai standard 60 jours (loi 69-21) + 12 jours de retard
+      dueDate: daysAgo(12),
       status: "EN_RETARD",
     },
   });
@@ -43,7 +43,7 @@ async function main() {
         "Bonjour Yassine, un petit rappel amical : la facture FAC-2026-0142 de 18 000 MAD est arrivée à échéance il y a quelques jours. Peut-être un simple oubli — dites-nous si un justificatif de paiement est déjà en route.",
       status: "ENVOYEE_SIMULEE",
       createdBy: "AGENT",
-      sentAt: daysAgo(2),
+      sentAt: daysAgo(3),
     },
   });
 
@@ -63,12 +63,12 @@ async function main() {
       clientId: tanger.id,
       reference: "FAC-2026-0098",
       amountMad: 42_000,
-      issueDate: daysAgo(82),
-      dueDate: daysAgo(52),
+      issueDate: daysAgo(125), // proche du délai clients moyen observé chez les PME marocaines (88-94 jours, Inforisk 2024) + retard
+      dueDate: daysAgo(65),
       status: "EN_RETARD",
     },
   });
-  for (const [i, days] of [40, 25, 10].entries()) {
+  for (const [i, days] of [55, 35, 15].entries()) {
     await prisma.reminder.create({
       data: {
         invoiceId: tangerInvoice.id,
@@ -97,12 +97,12 @@ async function main() {
       clientId: cosmetiques.id,
       reference: "FAC-2026-0117",
       amountMad: 65_000,
-      issueDate: daysAgo(60),
-      dueDate: daysAgo(30),
+      issueDate: daysAgo(98),
+      dueDate: daysAgo(38),
       status: "ECHEANCIER",
     },
   });
-  for (const days of [22, 10]) {
+  for (const days of [28, 12]) {
     await prisma.reminder.create({
       data: {
         invoiceId: cosmetiquesInvoice.id,
@@ -123,7 +123,7 @@ async function main() {
       agentSummary: "Le client confirme la dette et demande un paiement en 3 fois sur 6 semaines.",
       proposedAction:
         "Proposer un échéancier en 3 mensualités de ~21 667 MAD, dans les limites autorisées — à valider par un humain avant envoi.",
-      receivedAt: daysAgo(9),
+      receivedAt: daysAgo(10),
     },
   });
 
@@ -143,8 +143,8 @@ async function main() {
       clientId: btp.id,
       reference: "FAC-2026-0155",
       amountMad: 120_000,
-      issueDate: daysAgo(51),
-      dueDate: daysAgo(21),
+      issueDate: daysAgo(88),
+      dueDate: daysAgo(28),
       status: "LITIGE",
     },
   });
@@ -152,10 +152,10 @@ async function main() {
     data: {
       invoiceId: btpInvoice.id,
       tone: "AMICALE",
-      content: "Relance concernant la facture FAC-2026-0155 (120 000 MAD), échéance dépassée de 21 jours.",
+      content: "Relance concernant la facture FAC-2026-0155 (120 000 MAD), échéance dépassée de 28 jours.",
       status: "ENVOYEE_SIMULEE",
       createdBy: "AGENT",
-      sentAt: daysAgo(15),
+      sentAt: daysAgo(18),
     },
   });
   await prisma.clientReply.create({
@@ -166,7 +166,7 @@ async function main() {
       classifiedIntent: "CONTESTATION",
       agentSummary: "Le client conteste 30 000 MAD sur 120 000 MAD pour non-conformité de livraison.",
       proposedAction: "Hors cadre automatique — à escalader à un humain (vérifier le bon de commande et la livraison).",
-      receivedAt: daysAgo(6),
+      receivedAt: daysAgo(7),
     },
   });
 
@@ -177,7 +177,8 @@ async function main() {
       sector: "Industrie / équipement",
       contactName: "Nabil Cherkaoui",
       contactEmail: "n.cherkaoui@meknes-industrie.ma",
-      behaviorNote: "Aucune réponse depuis 75 jours malgré 4 relances. Ancien litige déjà résolu sans incident.",
+      behaviorNote:
+        "Aucune réponse depuis plus de 110 jours malgré 4 relances — approche le plafond légal de 120 jours (loi 69-21). Ancien litige déjà résolu sans incident.",
       strategic: false,
     },
   });
@@ -186,12 +187,12 @@ async function main() {
       clientId: meknes.id,
       reference: "FAC-2026-0071",
       amountMad: 28_000,
-      issueDate: daysAgo(105),
-      dueDate: daysAgo(75),
+      issueDate: daysAgo(172), // délai moyen de paiement au Maroc en 2023, avant amélioration (Inforisk) — cas volontairement extrême
+      dueDate: daysAgo(112),
       status: "EN_RETARD",
     },
   });
-  for (const [i, days] of [60, 45, 30, 12].entries()) {
+  for (const [i, days] of [90, 65, 40, 15].entries()) {
     await prisma.reminder.create({
       data: {
         invoiceId: meknesInvoice.id,
@@ -220,8 +221,8 @@ async function main() {
       clientId: alAmal.id,
       reference: "FAC-2026-0163",
       amountMad: 250_000,
-      issueDate: daysAgo(45),
-      dueDate: daysAgo(15),
+      issueDate: daysAgo(78),
+      dueDate: daysAgo(18),
       status: "EN_RETARD",
     },
   });

@@ -115,7 +115,7 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
               onClick={() => selectItem(item.invoiceId)}
               className={`w-full rounded-xl border p-4 text-left transition ${
                 selectedId === item.invoiceId
-                  ? "border-emerald-300 bg-emerald-50/60 ring-1 ring-emerald-200"
+                  ? "border-indigo-300 bg-indigo-50/60 ring-1 ring-indigo-200"
                   : "border-slate-200 bg-white hover:border-slate-300"
               }`}
             >
@@ -170,7 +170,7 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
               {selected.behaviorNote}
             </div>
 
-            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/60 p-3 text-sm text-emerald-900">
+            <div className="mt-4 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3 text-sm text-indigo-900">
               <span className="font-medium">Raisonnement de l&apos;agent — </span>
               {selected.reasoning}
             </div>
@@ -226,7 +226,7 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
                 <button
                   onClick={handleGenerate}
                   disabled={loadingGenerate}
-                  className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                  className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
                 >
                   {loadingGenerate ? "L'agent rédige…" : "Générer la prochaine relance"}
                 </button>
@@ -239,13 +239,13 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     rows={8}
-                    className="w-full rounded-lg border border-slate-200 p-3 text-sm text-slate-700 focus:border-emerald-400 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 p-3 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleSend}
                       disabled={loadingSend}
-                      className="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                      className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
                     >
                       {loadingSend ? "Envoi…" : "Envoyer"}
                     </button>

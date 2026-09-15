@@ -3,6 +3,7 @@ import { computeRiskScore } from "@/lib/scoring";
 import type { WorklistItem } from "@/lib/types";
 import { KpiHeader } from "@/components/KpiHeader";
 import { Worklist } from "@/components/Worklist";
+import { LogoWordmark } from "@/components/Logo";
 
 export const dynamic = "force-dynamic";
 
@@ -71,14 +72,11 @@ export default async function Home() {
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-5">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-emerald-600" />
-            <span className="text-lg font-semibold tracking-tight">Vélos IA</span>
-            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-              Démo — données simulées
-            </span>
-          </div>
+        <div className="mx-auto flex max-w-6xl items-center px-6 py-5">
+          <LogoWordmark />
+          <span className="ml-3 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+            Démo — données simulées
+          </span>
         </div>
       </header>
 

@@ -15,7 +15,10 @@ export type ScoringResult = {
 };
 
 const AMOUNT_CAP_MAD = 150_000;
-const DAYS_CAP = 90;
+// Plafond calé sur la réalité marocaine : délai moyen PME 2024 = 88 jours (Inforisk),
+// plafond légal entre partenaires commerciaux = 120 jours (loi 69-21).
+const DAYS_CAP = 120;
+const LEGAL_CEILING_DAYS = 120;
 const REMINDERS_CAP = 4;
 
 export function computeRiskScore(input: ScoringInput): ScoringResult {
@@ -47,16 +50,23 @@ function buildReasoning(args: {
   const { daysOverdue, amountMad, reminderCount, hasUnresolvedReply, priority } = args;
   const amountLabel = `${amountMad.toLocaleString("fr-FR")} MAD`;
 
+  const legalNote =
+    daysOverdue >= LEGAL_CEILING_DAYS
+      ? ` — dépasse le plafond légal marocain de ${LEGAL_CEILING_DAYS} jours (loi 69-21)`
+      : daysOverdue >= LEGAL_CEILING_DAYS - 15
+      ? ` — approche le plafond légal marocain de ${LEGAL_CEILING_DAYS} jours (loi 69-21)`
+      : "";
+
   if (hasUnresolvedReply) {
-    return `${daysOverdue} jours de retard sur ${amountLabel}, le client a répondu — une action humaine est en attente.`;
+    return `${daysOverdue} jours de retard sur ${amountLabel}, le client a répondu — une action humaine est en attente.${legalNote}`;
   }
   if (reminderCount === 0) {
-    return `${daysOverdue} jours de retard sur ${amountLabel}, aucune relance envoyée pour l'instant.`;
+    return `${daysOverdue} jours de retard sur ${amountLabel}, aucune relance envoyée pour l'instant.${legalNote}`;
   }
   if (priority === "URGENT") {
-    return `${daysOverdue} jours de retard sur ${amountLabel}, ${reminderCount} relance(s) sans réponse → priorité haute.`;
+    return `${daysOverdue} jours de retard sur ${amountLabel}, ${reminderCount} relance(s) sans réponse → priorité haute.${legalNote}`;
   }
-  return `${daysOverdue} jours de retard sur ${amountLabel}, ${reminderCount} relance(s) envoyée(s).`;
+  return `${daysOverdue} jours de retard sur ${amountLabel}, ${reminderCount} relance(s) envoyée(s).${legalNote}`;
 }
 
 export function suggestedTone(reminderCount: number): "AMICALE" | "FERME" | "MISE_EN_DEMEURE" {

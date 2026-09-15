@@ -234,4 +234,42 @@ Si non aux 3 → on retravaille avant d'avancer.
 - Prisma a été fixé en version 6.19.3 (stable) après un premier essai en v7/v8 (versions encore instables au moment du build, changement de config non nécessaire pour ce POC) — ne pas mettre à jour Prisma sans re-tester.
 - Port 3000 déjà occupé par le projet "Lea/naiom-platform" sur cette machine → la démo tourne sur un port différent attribué automatiquement (`autoPort` activé dans `.claude/launch.json`), sans impact sur l'autre projet.
 
-**Checkpoint "test du prospect"** : les temps 1 (douleur), 3 (preuve en action) et 4 (chiffre DSO) du script de démo (§15a) sont déjà démontrables à l'écran. Le temps 5 (négociation exceptionnelle) est démontrable sur les dossiers Cosmétiques du Sud et BTP Rif Construction. Reste à valider en vrai la qualité du texte généré par l'IA une fois la clé branchée.
+**Checkpoint "test du prospect"** : les temps 1 (douleur), 3 (preuve en action) et 4 (chiffre DSO) du script de démo (§15a) sont déjà démontrables à l'écran. Le temps 5 (négociation exceptionnelle) est démontrable sur les dossiers Cosmétiques du Sud et BTP Rif Construction.
+
+**Mise à jour 2026-09-15 (soir) — clé API branchée, premier test réel :**
+- Première génération : email tronqué (max_tokens trop bas) ET contenait "porter plainte auprès des autorités compétentes" — formulation de droit pénal inappropriée pour un impayé commercial en phase amiable, plus des placeholders bruts type "[Nom de votre" non remplis. Corrigé immédiatement (`src/app/api/reminders/generate/route.ts`) : max_tokens relevé à 600, règles strictes ajoutées au prompt (pas de menace pénale, pas de crochets à compléter, délai en formulation relative, signature générique "Le service recouvrement — Meridian Distribution"). Nom de la PME créancière fictive fixé : **Meridian Distribution**.
+- Deuxième génération (même dossier, Meknès Industrie) : email complet, professionnel, correct juridiquement, prêt à l'emploi. Testé jusqu'au bout : "Envoyer" (simulé) → historique mis à jour en direct (4 → 5 relances), traçabilité fonctionnelle.
+- Exactement le genre de problème que la grille de vérification (§15b) et le rituel de checkpoint (§15c) sont censés attraper — attrapé et corrigé avant de montrer quoi que ce soit à un prospect.
+
+**Git** : dépôt initialisé à la racine du projet (`recouvrement-ia-platform/`), premier commit fait en local. Dépôt distant fourni par l'utilisateur : https://github.com/larbi701/recouvrement-ia-platform.git
+
+## 17. Calibrage marché marocain (2026-09-15, vérifié par recherche)
+
+Chiffres réels trouvés (étude Inforisk 2026, échantillon 25 392 entreprises, 85% TPE / 13% PME / 2% GE) :
+- Délai de paiement moyen toutes entreprises : 172 jours (2023) → 150 jours (2024), -22 jours.
+- TPE : 199 → 167 jours (-32 jours).
+- **PME : 94 → 88 jours** (amélioration limitée) — c'est la référence retenue pour notre cible.
+- Cadre légal (loi 69-21) : délai standard ≤ 60 jours depuis la date de facture ; **plafond à 120 jours entre partenaires commerciaux**.
+
+Sources : [Médias24](https://medias24.com/2025/07/25/delais-de-paiement-recul-du-credit-interentreprises-mais-des-retards-toujours-important-dans-le-prive), [EcoActu — baromètre Inforisk](https://ecoactu.ma/barometre-inforisk-la-loi-69-21-est-elle-en-train-de-terrasser-le-fleau-des-retards/), [Jeune Afrique](https://www.jeuneafrique.com/788207/economie-entreprises/maroc-malgre-une-baisse-les-delais-de-paiement-entre-entreprises-restent-lents/).
+
+**Changements appliqués** :
+- `src/lib/scoring.ts` : plafond de score (`DAYS_CAP`) relevé de 90 à **120 jours** (aligné sur la loi 69-21) ; ajout d'une mention automatique dans le raisonnement de l'agent quand un dossier approche (≥105j) ou dépasse (≥120j) le plafond légal.
+- Scénario démo recalibré : délais standard facture→échéance fixés à 60 jours (le défaut légal) ; le cas Meknès Industrie (silence total) porté à **112 jours de retard** (issueDate à 172 jours — clin d'œil volontaire au chiffre national 2023) pour incarner un dossier proche du plafond légal, un argument de vente fort et spécifique au Maroc.
+- Tableau de bord : DSO "avant" fixé à **88 jours** (chiffre réel PME 2024, sourcé), DSO "après" simulé à **58 jours** (-34%, ordre de grandeur documenté chez Growfin) — infobulle affichant la source au survol.
+- Prompt de l'agent (génération de relance) : ajoute automatiquement un rappel factuel du plafond légal de 120 jours (loi 69-21) quand le dossier en est proche, sans le présenter comme une menace.
+
+## 18. Vérification de cohérence avec Growfin (2026-09-15)
+
+Comparé notre construit aux deux piliers connus de Growfin (Collections CRM + Cash Application, cf. §14/§15) :
+- **Collections CRM (notre périmètre V1)** : ✅ couvert — worklist priorisée automatiquement, relances personnalisées, boîte de réception/gestion des réponses, traçabilité. C'est le pilier sur lequel on s'aligne.
+- **Cash Application** (rapprochement automatique des paiements par OCR/IA) : ❌ hors périmètre, **par choix assumé** — ce n'est pas "l'amont" tel que défini au §3, et n'apporte pas la même valeur de démonstration commerciale immédiate. À reconsidérer seulement si un pilote réel le demande explicitement.
+- Recherche complémentaire sur les avis G2 : dashboard Growfin décrit comme "attractif" et "très user-friendly" comparé aux ERP classiques — conforme à l'objectif "hyper sexy, épuré" du §14. Aucun détail de palette de couleurs trouvé publiquement (pas de contrainte à respecter de ce côté).
+
+## 19. Charte graphique "Vélos IA" (2026-09-15)
+
+- **Couleur de marque** : Indigo-600 (`#4F46E5` environ) — logo, éléments interactifs (boutons, sélection), remplace le vert générique utilisé au premier jet. Choisi pour se différencier du vert "fintech générique" que beaucoup d'outils de ce secteur utilisent (dont Growfin), tout en évoquant la vélocité/modernité.
+- **Emerald conservé uniquement en usage sémantique** : confirmation "Relance envoyée ✓", montant "récupéré" — code couleur universel "argent/succès", pas la couleur de marque.
+- **Couleurs de risque inchangées** (rouge/ambre/slate pour Urgent/À traiter/Surveillance) — ce sont des codes universels, ne pas les rebrander.
+- **Logo** : marque simple en SVG (double chevron blanc sur fond dégradé indigo, `src/components/Logo.tsx`) — évoque la vitesse/vélocité sans dépendre d'une image externe.
+- Nom **"Vélos IA" considéré comme acté** pour la durée du POC (plus de piste alternative explorée activement, cf. §12 pour les autres options si le nom doit changer avant le dépôt de marque).
