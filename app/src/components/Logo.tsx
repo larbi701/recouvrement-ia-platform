@@ -1,5 +1,5 @@
 // Mark officiel VELOS IA : trois nœuds reliés (charte graphique V5, section 04).
-// Sur fond indigo : mark en blanc, sauf le nœud bas et la barre qui restent en violet.
+// Sur fond indigo : mark et lignes en blanc, seul le nœud bas reste en violet (l'accent signature).
 type MarkProps = { className?: string; onDark?: boolean };
 
 export function LogoMark({ className = "h-6 w-6", onDark = false }: MarkProps) {
@@ -11,7 +11,7 @@ export function LogoMark({ className = "h-6 w-6", onDark = false }: MarkProps) {
   return (
     <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
       <line x1="22" y1="22" x2="50" y2="78" stroke={lineColor} strokeWidth="6" strokeLinecap="round" />
-      <line x1="78" y1="22" x2="50" y2="78" stroke="var(--color-violet-velos)" strokeWidth="6" strokeLinecap="round" />
+      <line x1="78" y1="22" x2="50" y2="78" stroke={lineColor} strokeWidth="6" strokeLinecap="round" />
       <line x1="22" y1="22" x2="78" y2="22" stroke={lineColor} strokeWidth="6" strokeLinecap="round" />
       <circle cx="22" cy="22" r="11" fill={topNodeFill} stroke={topNodeStroke} strokeWidth="6" />
       <circle cx="78" cy="22" r="11" fill={topNodeFill} stroke={topNodeStroke} strokeWidth="6" />
