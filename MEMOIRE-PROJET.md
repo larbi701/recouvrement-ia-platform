@@ -395,3 +395,22 @@ Retour direct : contrairement aux agents NAIOM (qui produisent un livrable concr
 - **Limite assumée** : les numéros/emails du scénario démo sont fictifs (domaines inventés) — l'ouverture de la messagerie/WhatsApp fonctionne quand même (c'est le comportement du navigateur/téléphone qui s'ouvre, pas une vérification que le destinataire existe). Avec le pilote réel (vrais contacts), ça enverra pour de vrai.
 
 **Reste un écart avec le modèle NAIOM** (plan proposé → validation → livrable produit) : notre flux est "génère → modifie → ouvre le vrai canal", en une étape, pas un plan explicite validé avant exécution. Pas corrigé pour l'instant — à évaluer si l'utilisateur le demande explicitement, ce serait un changement de UX plus lourd (étape de plan visible avant génération).
+
+## 27. "Complètement nul" — retour très négatif après test réel, refonte (2026-09-15)
+
+L'utilisateur a testé la version avec l'entonnoir (cartes) et l'action réelle (mailto/wa.me) et l'a jugée "complètement nulle" — signal qu'un patch de plus ne suffirait pas. Clarifié par questions ciblées :
+1. Version bien testée (confirmé), donc le problème n'était pas un cache.
+2. "Action concrète" = **pilotage automatique du dossier** (option choisie explicitement) : Yasmine doit enchaîner plusieurs actions sans qu'on reclique à chaque étape — pas juste "génère un message, ouvre un lien".
+3. "Entonnoir" = pas assez guidé/visuel — les 4 cartes côte à côte ne suffisaient pas, il fallait une vraie forme d'entonnoir.
+
+### Ce qui a été construit en réponse
+
+**a) Pilotage automatique du portefeuille** (`PortfolioAutopilot.tsx` + `POST /api/portfolio/run`) : un bouton unique sur le Cockpit — "Lancer Yasmine sur le portefeuille" — qui traite **d'affilée tous les dossiers ayant une relance email/WhatsApp due**, sans ouvrir chaque dossier un par un. Chaque dossier est réellement passé à l'agent (vrai appel Claude via `generateReminderDraft`, factorisé dans `src/lib/agentDraft.ts` pour être partagé entre le flux unitaire et le flux batch), le résultat est journalisé (traçabilité), et la liste des dossiers traités s'affiche avec un extrait du message généré. **Testé en direct** : 3 dossiers traités en une seule action (Tanger Fournitures, Groupe Al Amal, Atlas Négoce), contenu réellement généré par Claude pour chacun, fil d'activité mis à jour avec les 3 nouvelles entrées. C'est la vraie réponse à "action concrète" : plusieurs tâches exécutées par un seul déclenchement, comme un agent qui travaille, pas un formulaire qu'on remplit dossier par dossier.
+
+**b) Entonnoir visuel réel** (`Funnel.tsx` refondu) : 4 segments en forme de trapèze empilés (CSS `clip-path`), qui se rétrécissent du haut (large, "Relance automatique") vers le bas (étroit, "Urgent / plafond légal") — une vraie silhouette d'entonnoir, pas des cartes côte à côte. Le rétrécissement est esthétique (largeurs fixes 100/78/56/36%), le compte réel de chaque niveau s'affiche en chiffre dans le segment. Chaque segment reste cliquable vers `/dossiers?stage=...`.
+
+**c) Petit fix qualité** : le prompt de génération laissait parfois passer du markdown (`**gras**`) dans le texte d'un email — inapproprié pour un message censé être fini/prêt à envoyer. Règle ajoutée : "texte brut, pas de markdown."
+
+**d) Fix technique seed** : `prisma.callTask.deleteMany()` manquait dans le script de seed (ajouté après le modèle CallTask) — provoquait une erreur de contrainte de clé étrangère au reseed. Corrigé.
+
+**Encore non fait, à évaluer si demandé** : un "plan" multi-étapes visible par dossier avant exécution (comme Léa qui propose un plan puis livre) — actuellement le pilotage automatique exécute directement l'étape due, sans écran de plan intermédiaire à valider. Le pilotage automatique répond à "moins de clics, plus d'exécution groupée", pas encore à "voir le raisonnement complet avant que ça parte".
