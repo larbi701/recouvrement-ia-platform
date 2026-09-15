@@ -1,26 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Palette VELOS IA — Charte graphique V5 */
+  --color-indigo-deep: #181a89; /* Indigo Profond — titres, fonds, autorité */
+  --color-violet-velos: #9b5fe0; /* Violet Velos — KPIs, accents, signature IA */
+  --color-azur: #156c9c; /* Bleu Azur — liens, sources, métadonnées */
+  --color-sky: #63b3ed; /* Sky Blue — graphiques, flux de données */
+  --color-corail: #ff6868; /* Corail Velos — alertes, CTA urgents */
+  --color-graphite: #2d3748; /* Gris Graphite — corps de texte */
+  --color-lavande: #f6d4ff; /* Lavande Velos — badges, encadrés */
+  --color-lavande-struct: #dbdcf9; /* Lavande Structurelle — tableaux, blocs secondaires */
+  --color-perle: #f8f8f8; /* Fond Perle — arrière-plan général */
+
+  --background: var(--color-perle);
+  --foreground: var(--color-graphite);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-indigo-deep: var(--color-indigo-deep);
+  --color-violet-velos: var(--color-violet-velos);
+  --color-azur: var(--color-azur);
+  --color-sky: var(--color-sky);
+  --color-corail: var(--color-corail);
+  --color-graphite: var(--color-graphite);
+  --color-lavande: var(--color-lavande);
+  --color-lavande-struct: var(--color-lavande-struct);
+  --color-perle: var(--color-perle);
+  --font-sans: var(--font-poppins);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }

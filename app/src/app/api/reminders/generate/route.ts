@@ -54,6 +54,7 @@ Règles strictes :
 - N'utilise aucun texte entre crochets à compléter (pas de "[Nom]", "[date]", etc.) — écris un email fini, prêt à envoyer tel quel. Pour un délai, utilise une formulation relative ("dans les 5 jours suivant la réception de ce message"), jamais une date absolue que tu ne peux pas connaître.
 - Termine par une signature générique : "Le service recouvrement — Meridian Distribution" (pas de prénom inventé).
 - Reste concis : 130 à 180 mots pour le corps du message.
+- Ton de voix (charte VELOS IA) : factuel (un chiffre plutôt qu'un adjectif), direct (phrases courtes, voix active), sobre (aucune formule à effet). Évite tout vocabulaire du type "solution innovante", "révolutionner", "disruptif".
 
 Réponds uniquement avec "Objet : ..." suivi du corps de l'email. Pas de commentaire, pas de balise, pas d'explication.`;
 

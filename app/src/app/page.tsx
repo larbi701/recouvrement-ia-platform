@@ -71,10 +71,10 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-lavande-struct bg-white">
         <div className="mx-auto flex max-w-6xl items-center px-6 py-5">
           <LogoWordmark />
-          <span className="ml-3 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+          <span className="ml-3 rounded-full bg-lavande-struct px-2 py-0.5 text-xs font-medium text-indigo-deep">
             Démo — données simulées
           </span>
         </div>

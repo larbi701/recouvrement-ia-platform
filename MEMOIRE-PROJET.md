@@ -273,3 +273,35 @@ Comparé notre construit aux deux piliers connus de Growfin (Collections CRM + C
 - **Couleurs de risque inchangées** (rouge/ambre/slate pour Urgent/À traiter/Surveillance) — ce sont des codes universels, ne pas les rebrander.
 - **Logo** : marque simple en SVG (double chevron blanc sur fond dégradé indigo, `src/components/Logo.tsx`) — évoque la vitesse/vélocité sans dépendre d'une image externe.
 - Nom **"Vélos IA" considéré comme acté** pour la durée du POC (plus de piste alternative explorée activement, cf. §12 pour les autres options si le nom doit changer avant le dépôt de marque).
+
+## 20. Charte graphique officielle reçue — VELOS IA V5 (2026-09-15)
+
+L'utilisateur a fourni un vrai document de marque (`VELOS_IA_Charte_Graphique_V5.pdf`, confidentiel). Il révèle que **VELOS IA est un projet plus large que le seul recouvrement** :
+
+> "Le système d'exploitation des PME marocaines, piloté par des agents IA autonomes." — Business Operating System, CEO & co-fondateur **Larbi Chraïbi**, velosia.io, Casablanca.
+
+**Trois domaines d'agents** : CASH (trésorerie · prévision · **relances** · rapprochement bancaire), GROWTH (CRM · pipeline · devis · suivi commercial), STRATEGY (scénarios · rentabilité · arbitrages). **Notre POC actuel = la brique "relances" du domaine CASH uniquement.** Trésorerie, prévision et rapprochement bancaire restent hors périmètre (cohérent avec la stratégie "amont d'abord" déjà actée) — mais il faut garder en tête que le produit final vise bien plus large.
+
+**Cible précisée** : dirigeants de PME **10M-175M MAD de CA**, B2B structuré, Maroc + cabinets comptables (pas seulement "PME/ETI" au sens large — un seuil de CA précis).
+
+**Problème officiel positionné** : "125 jours d'attente de paiement" et "40% des faillites PME liées à la trésorerie" — chiffre de positionnement à utiliser en priorité (utilisé maintenant comme DSO "avant" dans le tableau de bord), les chiffres Inforisk (88j PME/94j/172j) gardés en note de support.
+
+**Réglementation élargie** : en plus de la loi 69-21 (déjà connue), la charte mentionne **facturation électronique CGI 2026** et **open banking** comme éléments de contexte réglementaire — à approfondir si le produit va vers la brique trésorerie/rapprochement bancaire plus tard.
+
+**Ton de voix à respecter dans tous les textes générés** (emails, UI, présentation) : factuel (un chiffre plutôt qu'un adjectif), direct (phrases courtes, voix active, vocabulaire de dirigeant), sobre (démontrer plutôt que promettre). Vocabulaire à privilégier : agents, pilotage, temps réel, trésorerie, encaissement, DSO, décision, arbitrage, scénario, dirigeant, PME, cabinet comptable. **Vocabulaire à écarter** : solution innovante, révolutionner, disruptif, game changer, ERP, progiciel, module logiciel, "intelligence artificielle" en général. → Intégré au prompt de génération de relances (`src/app/api/reminders/generate/route.ts`).
+
+### Écarts corrigés dans le code (avant cette charte, tout était improvisé)
+
+| Élément | Avant (improvisé) | Après (charte V5) |
+|---|---|---|
+| Logo | Carré coloré + double chevron (invention) | **Mark officiel** : trois nœuds reliés façon triangle/V (`src/components/Logo.tsx`), badge indigo, wordmark "VELOS IA" (sans accent, IA en violet) + sous-titre "BUSINESS OPERATING SYSTEM" |
+| Police | Geist (police par défaut Next.js) | **Poppins** (seule famille autorisée, poids 300/400/500/700), chargée via `next/font/google` |
+| Couleur de marque | Indigo Tailwind générique (#4F46E5 approx.) | **Indigo Profond `#181A89`** (autorité) + **Violet Velos `#9B5FE0`** (KPIs/signature IA), tokens exacts dans `globals.css` |
+| Couleurs sémantiques | Rouge/ambre/slate Tailwind par défaut | **Corail `#FF6868`** (urgent, texte Indigo dessus — pas blanc, cf. règle de contraste corrigée V5), **Bleu Azur** (à traiter), **Lavande Structurelle** (surveillance/neutre) |
+| Mode sombre | Bascule auto `prefers-color-scheme` héritée du template | **Supprimée** — la charte ne définit qu'un usage fond clair/fond indigo, pas de dark mode applicatif |
+| KPI (couleur) | Texte gris foncé générique | **Violet Velos**, conforme à la sémantique "Violet = KPIs" de la charte |
+| Ton des textes IA | Correct mais non formalisé | Règles de ton (factuel/direct/sobre) et vocabulaire à écarter ajoutés explicitement au prompt |
+
+**Non repris tel quel (hors périmètre app web)** : le gabarit de signature email (section 06 de la charte) — concerne la messagerie personnelle de l'utilisateur, pas l'application. À traiter séparément si demandé.
+
+**Vérification effectuée** : rendu contrôlé dans le navigateur après application (captures internes) — logo, couleurs de badges de priorité, encadré "raisonnement de l'agent", boutons, tous conformes aux couples couleur/contraste autorisés par la charte (section 05).

@@ -1,29 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Vélos IA — Recouvrement",
-  description: "Démo — agent IA de recouvrement amiable B2B",
+  title: "VELOS IA — Recouvrement",
+  description: "Business Operating System — agent de recouvrement amiable B2B (démo)",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="fr"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900">{children}</body>
+    <html lang="fr" className={`${poppins.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col bg-perle text-graphite">{children}</body>
     </html>
   );
 }

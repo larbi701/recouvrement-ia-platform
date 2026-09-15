@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import type { WorklistItem } from "@/lib/types";
 
 const PRIORITY_STYLES: Record<WorklistItem["priority"], string> = {
-  URGENT: "bg-red-50 text-red-700 ring-red-200",
-  A_TRAITER: "bg-amber-50 text-amber-700 ring-amber-200",
-  SURVEILLANCE: "bg-slate-100 text-slate-600 ring-slate-200",
+  URGENT: "bg-corail/10 text-indigo-deep ring-corail/40",
+  A_TRAITER: "bg-sky/15 text-azur ring-sky/40",
+  SURVEILLANCE: "bg-lavande-struct text-graphite/70 ring-lavande-struct",
 };
 
 const PRIORITY_LABELS: Record<WorklistItem["priority"], string> = {
@@ -115,32 +115,32 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
               onClick={() => selectItem(item.invoiceId)}
               className={`w-full rounded-xl border p-4 text-left transition ${
                 selectedId === item.invoiceId
-                  ? "border-indigo-300 bg-indigo-50/60 ring-1 ring-indigo-200"
-                  : "border-slate-200 bg-white hover:border-slate-300"
+                  ? "border-violet-velos/50 bg-lavande-struct/50 ring-1 ring-violet-velos/30"
+                  : "border-lavande-struct bg-white hover:border-violet-velos/30"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-900">{item.clientName}</span>
+                    <span className="font-medium text-indigo-deep">{item.clientName}</span>
                     {item.strategic && (
                       <span
                         title="Client stratégique — à traiter avec tact, indépendamment du score"
-                        className="text-amber-500"
+                        className="text-violet-velos"
                       >
                         ★
                       </span>
                     )}
                     {item.replies.length > 0 && (
-                      <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700 ring-1 ring-sky-200">
+                      <span className="rounded-full bg-azur/10 px-2 py-0.5 text-[11px] font-medium text-azur ring-1 ring-azur/30">
                         Réponse à traiter
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-slate-500">{item.reasoning}</p>
+                  <p className="mt-1 text-sm text-graphite/70">{item.reasoning}</p>
                 </div>
                 <div className="shrink-0 text-right">
-                  <div className="font-semibold text-slate-900">
+                  <div className="font-bold text-indigo-deep">
                     {item.amountMad.toLocaleString("fr-FR")} MAD
                   </div>
                   <span
@@ -157,44 +157,44 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
 
       <aside className="lg:sticky lg:top-6 lg:self-start">
         {selected ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <div className="rounded-xl border border-lavande-struct bg-white p-5">
             <div className="mb-1 flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-slate-900">{selected.clientName}</h2>
-              {selected.strategic && <span className="text-amber-500">★</span>}
+              <h2 className="text-lg font-bold text-indigo-deep">{selected.clientName}</h2>
+              {selected.strategic && <span className="text-violet-velos">★</span>}
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-graphite/60">
               {selected.sector} · {selected.contactName} · {selected.contactEmail}
             </p>
 
-            <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+            <div className="mt-4 rounded-lg bg-perle p-3 text-sm text-graphite">
               {selected.behaviorNote}
             </div>
 
-            <div className="mt-4 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3 text-sm text-indigo-900">
-              <span className="font-medium">Raisonnement de l&apos;agent — </span>
+            <div className="mt-4 rounded-lg border border-violet-velos/30 bg-lavande/30 p-3 text-sm text-indigo-deep">
+              <span className="font-semibold text-violet-velos">Raisonnement de l&apos;agent — </span>
               {selected.reasoning}
             </div>
 
             {selected.replies.length > 0 && (
-              <div className="mt-4 rounded-lg border border-sky-200 bg-sky-50/60 p-3 text-sm">
-                <p className="font-medium text-sky-900">
+              <div className="mt-4 rounded-lg border border-azur/30 bg-azur/5 p-3 text-sm">
+                <p className="font-medium text-azur">
                   Réponse du client
                   {selected.replies[0].classifiedIntent && (
-                    <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-700">
+                    <span className="ml-2 rounded-full bg-azur/10 px-2 py-0.5 text-[11px] font-medium text-azur">
                       {INTENT_LABELS[selected.replies[0].classifiedIntent] ?? selected.replies[0].classifiedIntent}
                     </span>
                   )}
                 </p>
-                <p className="mt-1 text-slate-600">&ldquo;{selected.replies[0].content}&rdquo;</p>
+                <p className="mt-1 text-graphite/80">&ldquo;{selected.replies[0].content}&rdquo;</p>
                 {selected.replies[0].agentSummary && (
-                  <p className="mt-2 text-slate-600">
-                    <span className="font-medium">Résumé agent : </span>
+                  <p className="mt-2 text-graphite/80">
+                    <span className="font-medium text-graphite">Résumé agent : </span>
                     {selected.replies[0].agentSummary}
                   </p>
                 )}
                 {selected.replies[0].proposedAction && (
-                  <p className="mt-2 text-slate-600">
-                    <span className="font-medium">Action proposée : </span>
+                  <p className="mt-2 text-graphite/80">
+                    <span className="font-medium text-graphite">Action proposée : </span>
                     {selected.replies[0].proposedAction}
                   </p>
                 )}
@@ -202,50 +202,50 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
             )}
 
             <div className="mt-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-graphite/60">
                 Historique des relances ({selected.reminders.length})
               </p>
               <ul className="flex flex-col gap-2">
                 {selected.reminders.map((r) => (
-                  <li key={r.id} className="rounded-lg border border-slate-200 p-2 text-xs text-slate-600">
+                  <li key={r.id} className="rounded-lg border border-lavande-struct p-2 text-xs text-graphite/70">
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="font-medium">{TONE_LABELS[r.tone] ?? r.tone}</span>
+                      <span className="font-medium text-indigo-deep">{TONE_LABELS[r.tone] ?? r.tone}</span>
                       <span>{formatDate(r.sentAt)}</span>
                     </div>
-                    <p className="line-clamp-2 text-slate-500">{r.content}</p>
+                    <p className="line-clamp-2 text-graphite/60">{r.content}</p>
                   </li>
                 ))}
                 {selected.reminders.length === 0 && (
-                  <li className="text-xs text-slate-400">Aucune relance envoyée pour l&apos;instant.</li>
+                  <li className="text-xs text-graphite/40">Aucune relance envoyée pour l&apos;instant.</li>
                 )}
               </ul>
             </div>
 
-            <div className="mt-5 border-t border-slate-100 pt-4">
+            <div className="mt-5 border-t border-lavande-struct pt-4">
               {!draft ? (
                 <button
                   onClick={handleGenerate}
                   disabled={loadingGenerate}
-                  className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
+                  className="w-full rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                 >
                   {loadingGenerate ? "L'agent rédige…" : "Générer la prochaine relance"}
                 </button>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <span className="text-xs font-medium uppercase tracking-wide text-graphite/60">
                     Ton : {TONE_LABELS[draftTone ?? ""] ?? draftTone} — modifiable avant envoi
                   </span>
                   <textarea
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
                     rows={8}
-                    className="w-full rounded-lg border border-slate-200 p-3 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none"
+                    className="w-full rounded-lg border border-lavande-struct p-3 text-sm text-graphite focus:border-violet-velos focus:outline-none"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={handleSend}
                       disabled={loadingSend}
-                      className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-60"
+                      className="flex-1 rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-60"
                     >
                       {loadingSend ? "Envoi…" : "Envoyer"}
                     </button>
@@ -254,18 +254,18 @@ export function Worklist({ items }: { items: WorklistItem[] }) {
                         setDraft(null);
                         setDraftTone(null);
                       }}
-                      className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+                      className="rounded-lg border border-lavande-struct px-4 py-2 text-sm font-medium text-graphite transition hover:bg-perle"
                     >
                       Annuler
                     </button>
                   </div>
                 </div>
               )}
-              {confirmation && <p className="mt-2 text-sm text-emerald-700">{confirmation}</p>}
+              {confirmation && <p className="mt-2 text-sm font-medium text-indigo-deep">{confirmation}</p>}
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
+          <div className="rounded-xl border border-dashed border-lavande-struct p-8 text-center text-sm text-graphite/40">
             Sélectionne un dossier à gauche.
           </div>
         )}
