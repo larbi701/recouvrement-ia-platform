@@ -374,3 +374,13 @@ Correction demandée : la ligne reliant le nœud haut-droit au nœud bas était 
 **Fichier supprimé** : `src/components/Worklist.tsx` (l'ancien écran unique), remplacé par `DossierCards.tsx` + `DossierDetail.tsx` + `Funnel.tsx` + `AgentProfileCard.tsx` + `ActivityFeed.tsx` + `AppHeader.tsx`.
 
 **Vérifié en direct** : navigation Cockpit → niveau "Urgent/plafond légal" → dossier Meknès Industrie, journal d'activité du dossier complet et cohérent (7 événements, du plus récent au plus ancien), aucune erreur serveur.
+
+## 25. Page de présentation (accueil) — inspirée de la page Léa de NAIOM (2026-09-15)
+
+Demande : une page de présentation de l'agent, comme la page d'accueil de Léa (créateur de contenu) sur NAIOM. Structure retenue :
+- **`/` devient la page de présentation** (nouvelle page d'accueil/vitrine) : avatar large, statut "En ligne", rôle "Agent recouvrement — CASH · VELOS IA", nom "Yasmine" en grand, accroche + paragraphe de vente (marché marocain, plafond légal, travail 24/7), **3 chiffres calculés en direct depuis les vraies données** (dossiers sous gestion, MAD en retard suivis, actions menées), 4 cartes "Ce qu'elle sait faire" (Analyse & priorise / Rédige les relances / Prépare les appels / Traite les réponses), et un bouton d'appel à l'action "Voir Yasmine au travail →".
+- **Le Cockpit opérationnel déménage vers `/cockpit`** (ex-`/`). Le logo dans l'en-tête (`AppHeader`) pointe maintenant vers `/cockpit` (raccourci "retour à l'app" depuis n'importe quel écran), la page de présentation reste la vraie page d'accueil.
+- Fil d'Ariane mis à jour partout : Yasmine (présentation) → Cockpit → Dossiers → [Client].
+- Composant `AgentProfileCard.tsx` (la petite carte utilisée provisoirement sur le Cockpit) supprimé — remplacé par cette page dédiée, plus complète.
+
+**Usage pour la démo commerciale** : cette page est maintenant le point d'entrée naturel — elle sert le temps 1+2 du script de démo (§15a, douleur/promesse) avant de cliquer vers le Cockpit pour la preuve en action (temps 3).
