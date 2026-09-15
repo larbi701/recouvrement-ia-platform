@@ -5,6 +5,7 @@ import { KpiHeader } from "@/components/KpiHeader";
 import { Funnel } from "@/components/Funnel";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AppHeader } from "@/components/AppHeader";
+import { PortfolioAutopilot } from "@/components/PortfolioAutopilot";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,9 @@ export default async function Cockpit() {
   const items = invoices.map(buildWorklistItem).sort((a, b) => b.score - a.score);
   const totalOverdueMad = items.reduce((sum, i) => sum + i.amountMad, 0);
   const activity = buildActivityFeed(items, 8);
+  const pendingCount = items.filter(
+    (i) => i.nextAction.kind === "EMAIL" || i.nextAction.kind === "WHATSAPP"
+  ).length;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -23,6 +27,10 @@ export default async function Cockpit() {
       <KpiHeader totalOverdueMad={totalOverdueMad} dossierCount={items.length} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-16">
+        <div className="pt-6">
+          <PortfolioAutopilot pendingCount={pendingCount} />
+        </div>
+
         <div className="pt-6">
           <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">
             Où en sont vos dossiers

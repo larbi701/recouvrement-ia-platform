@@ -11,6 +11,7 @@ function daysAgo(n: number): Date {
 async function main() {
   await prisma.clientReply.deleteMany();
   await prisma.reminder.deleteMany();
+  await prisma.callTask.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.client.deleteMany();
 
