@@ -46,7 +46,7 @@ export default async function Presentation() {
   const stats = [
     { label: "Dossiers sous gestion", value: items.length.toString() },
     { label: "MAD en retard suivis", value: `${totalOverdueMad.toLocaleString("fr-FR")}` },
-    { label: "Actions menées par Yasmine", value: totalActions.toString() },
+    { label: "Actions menées par Yas", value: totalActions.toString() },
   ];
 
   return (
@@ -69,7 +69,7 @@ export default async function Presentation() {
             </span>
           </div>
 
-          <h1 className="mt-3 text-5xl font-bold tracking-tight text-indigo-deep">Yasmine</h1>
+          <h1 className="mt-3 text-5xl font-bold tracking-tight text-indigo-deep">Yas</h1>
 
           <p className="mt-3 max-w-xl text-lg text-graphite/80">
             Relances email et WhatsApp, fiches d&apos;appel, réponses client classées — le recouvrement amiable B2B,
@@ -86,7 +86,7 @@ export default async function Presentation() {
             href="/cockpit"
             className="mt-8 rounded-lg bg-indigo-deep px-6 py-3 text-sm font-semibold text-white transition hover:opacity-90"
           >
-            Voir Yasmine au travail →
+            Voir Yas au travail →
           </Link>
         </div>
 

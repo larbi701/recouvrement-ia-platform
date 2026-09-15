@@ -22,7 +22,7 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
     <div className="flex flex-1 flex-col">
       <AppHeader
         breadcrumb={[
-          { label: "Yasmine", href: "/" },
+          { label: "Yas", href: "/" },
           { label: "Cockpit", href: "/cockpit" },
           { label: "Dossiers", href: "/dossiers" },
           { label: item.clientName },

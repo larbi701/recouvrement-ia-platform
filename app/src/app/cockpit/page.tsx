@@ -23,7 +23,7 @@ export default async function Cockpit() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yasmine", href: "/" }, { label: "Cockpit" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Cockpit" }]} />
       <KpiHeader totalOverdueMad={totalOverdueMad} dossierCount={items.length} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-16">
@@ -43,10 +43,10 @@ export default async function Cockpit() {
 
         <div className="mt-8 rounded-xl border border-lavande-struct bg-white p-5">
           <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">
-            Activité de Yasmine
+            Activité de Yas
           </h2>
           <p className="mb-2 text-xs text-graphite/50">
-            Ce que Yasmine (et l&apos;humain, en relais) vient de faire sur le portefeuille.
+            Ce que Yas (et l&apos;humain, en relais) vient de faire sur le portefeuille.
           </p>
           <ActivityFeed events={activity} />
         </div>

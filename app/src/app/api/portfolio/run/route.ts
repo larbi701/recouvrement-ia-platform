@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { generateReminderDraft } from "@/lib/agentDraft";
 import { computeNextAction } from "@/lib/workflow";
 
-// Pilotage automatique : Yasmine traite d'affilée tous les dossiers qui ont une relance
+// Pilotage automatique : Yas traite d'affilée tous les dossiers qui ont une relance
 // email/WhatsApp due aujourd'hui, sans qu'un humain ait à ouvrir chaque dossier un par un.
 // Séquentiel et pas parallèle : chaque étape doit apparaître dans le fil d'activité dans
 // l'ordre où elle a été traitée, comme un vrai agent qui avance dossier après dossier.

@@ -35,7 +35,7 @@ export function ActivityFeed({ events, linkToDossiers = true }: { events: Activi
                       : "font-medium text-azur"
                   }
                 >
-                  {event.actor === "AGENT" ? "Yasmine" : "Humain"}
+                  {event.actor === "AGENT" ? "Yas" : "Humain"}
                 </span>
                 {event.detail ? ` · ${event.detail}` : ""}
               </p>

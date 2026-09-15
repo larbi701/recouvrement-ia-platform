@@ -7,13 +7,13 @@ const STAGES: { key: StageKey; label: string; description: string; match: (i: Wo
   {
     key: "auto",
     label: "Relance automatique",
-    description: "Email / WhatsApp — le parcours standard, géré seul par Yasmine",
+    description: "Email / WhatsApp — le parcours standard, géré seul par Yas",
     match: (i) => i.nextAction.kind === "EMAIL" || i.nextAction.kind === "WHATSAPP",
   },
   {
     key: "appel",
     label: "Appel humain requis",
-    description: "Yasmine a préparé une fiche, un humain doit appeler",
+    description: "Yas a préparé une fiche, un humain doit appeler",
     match: (i) => i.nextAction.kind === "CALL_TASK",
   },
   {

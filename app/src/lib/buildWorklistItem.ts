@@ -13,7 +13,7 @@ export function buildWorklistItem(invoice: InvoiceWithRelations): WorklistItem {
   const whatsappCount = invoice.reminders.filter((r) => r.channel === "WHATSAPP").length;
   const hasUnresolvedReply = invoice.replies.length > 0;
 
-  const { score, priority, reasoning } = computeRiskScore({
+  const { score, priority, reasoning, breakdown } = computeRiskScore({
     daysOverdue,
     amountMad: invoice.amountMad,
     reminderCount: emailCount + whatsappCount,
@@ -83,6 +83,7 @@ export function buildWorklistItem(invoice: InvoiceWithRelations): WorklistItem {
     score,
     priority,
     reasoning,
+    breakdown,
     nextAction,
   };
 }

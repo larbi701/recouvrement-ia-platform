@@ -1,4 +1,5 @@
 import type { NextAction } from "@/lib/workflow";
+import type { ScoreCriterion } from "@/lib/scoring";
 
 export type ReminderDTO = {
   id: string;
@@ -52,5 +53,6 @@ export type WorklistItem = {
   score: number;
   priority: "URGENT" | "A_TRAITER" | "SURVEILLANCE";
   reasoning: string;
+  breakdown: ScoreCriterion[];
   nextAction: NextAction;
 };

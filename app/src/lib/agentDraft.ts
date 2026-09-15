@@ -4,7 +4,7 @@ import type { Prisma } from "@prisma/client";
 
 type InvoiceForDraft = Prisma.InvoiceGetPayload<{ include: { client: true; reminders: true } }>;
 
-// Logique de rédaction de Yasmine, partagée entre l'action manuelle (un dossier)
+// Logique de rédaction de Yas, partagée entre l'action manuelle (un dossier)
 // et le pilotage automatique (plusieurs dossiers d'affilée).
 export async function generateReminderDraft(
   invoice: InvoiceForDraft,

@@ -7,8 +7,8 @@ export type NextAction =
   | { kind: "WAIT_HUMAN" } // réponse client non résolue -> agent Négociateur, pas d'action automatique
   | { kind: "LEGAL_ESCALATION" } // >= 120 jours, plafond légal marocain dépassé (loi 69-21)
   | { kind: "CALL_TASK"; reason: string } // besoin d'un appel humain, l'agent prépare la fiche
-  | { kind: "EMAIL"; tone: Tone }
-  | { kind: "WHATSAPP"; tone: Tone };
+  | { kind: "EMAIL"; tone: Tone; reason: string }
+  | { kind: "WHATSAPP"; tone: Tone; reason: string };
 
 export type WorkflowInput = {
   daysOverdue: number;
@@ -63,19 +63,37 @@ export function computeNextAction(input: WorkflowInput): NextAction {
   }
 
   const tone = suggestedTone(reminderCount);
+  const toneLabel =
+    tone === "AMICALE" ? "amical (premier contact)" : tone === "FERME" ? "ferme (relances précédentes restées sans effet)" : "dernier avertissement (avant mise en demeure)";
 
   // Dernier avertissement avant le plafond légal : toujours l'email, même pour un client
   // chronique habituellement contacté sur WhatsApp — c'est la trace écrite qui compte juridiquement.
   if (tone === "MISE_EN_DEMEURE") {
-    return { kind: "EMAIL", tone };
+    return {
+      kind: "EMAIL",
+      tone,
+      reason: `Ton ${toneLabel} : email choisi même si ce client est habituellement contacté sur WhatsApp — c'est la trace écrite qui compte juridiquement à ce stade, à l'approche du plafond légal.`,
+    };
   }
 
   // Client chronique qui ignore les emails : on saute directement WhatsApp.
   if (chronicLatePayer && emailCount === 0) {
-    return { kind: "WHATSAPP", tone };
+    return {
+      kind: "WHATSAPP",
+      tone,
+      reason: `Client chronique (n'ouvre pas ses emails d'après l'historique) : WhatsApp dès le premier contact, ton ${toneLabel}.`,
+    };
   }
   if (daysOverdue >= 8 || chronicLatePayer) {
-    return { kind: "WHATSAPP", tone };
+    return {
+      kind: "WHATSAPP",
+      tone,
+      reason: `${daysOverdue} jours de retard (≥ 8) ou client chronique : WhatsApp est plus direct qu'un email à ce stade, ton ${toneLabel}.`,
+    };
   }
-  return { kind: "EMAIL", tone };
+  return {
+    kind: "EMAIL",
+    tone,
+    reason: `Retard encore léger (${daysOverdue} jours) sur un client sans historique de retard chronique : email standard, ton ${toneLabel}.`,
+  };
 }

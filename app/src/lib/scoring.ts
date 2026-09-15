@@ -8,10 +8,18 @@ export type ScoringInput = {
   hasUnresolvedReply: boolean; // le client a répondu mais rien n'est encore tranché
 };
 
+export type ScoreCriterion = {
+  label: string;
+  value: string; // ce qui a été observé, en clair (ex: "112 jours de retard")
+  points: number; // points attribués sur ce critère
+  maxPoints: number;
+};
+
 export type ScoringResult = {
   score: number; // 0-100
   priority: "URGENT" | "A_TRAITER" | "SURVEILLANCE";
   reasoning: string; // phrase courte affichée à l'écran, façon "raisonnement de l'agent"
+  breakdown: ScoreCriterion[]; // détail des critères, pour que l'humain voie comment le score a été construit
 };
 
 const AMOUNT_CAP_MAD = 150_000;
@@ -37,7 +45,37 @@ export function computeRiskScore(input: ScoringInput): ScoringResult {
 
   const reasoning = buildReasoning({ daysOverdue, amountMad, reminderCount, hasUnresolvedReply, priority });
 
-  return { score, priority, reasoning };
+  const breakdown: ScoreCriterion[] = [
+    {
+      label: "Ancienneté du retard",
+      value: `${daysOverdue} jour(s) sur ${DAYS_CAP} (plafond légal marocain)`,
+      points: Math.round(overdueScore),
+      maxPoints: 40,
+    },
+    {
+      label: "Montant de la facture",
+      value: `${amountMad.toLocaleString("fr-FR")} MAD (plafond de barème : ${AMOUNT_CAP_MAD.toLocaleString("fr-FR")} MAD)`,
+      points: Math.round(amountScore),
+      maxPoints: 30,
+    },
+    {
+      label: "Relances déjà envoyées",
+      value: `${reminderCount} relance(s) sur ${REMINDERS_CAP} (au-delà, le plafond du critère est atteint)`,
+      points: Math.round(reminderScore),
+      maxPoints: 20,
+    },
+    {
+      label: "Silence prolongé",
+      value:
+        silenceBonus > 0
+          ? "2 relances ou plus envoyées, aucune réponse du client"
+          : "Pas encore assez de relances sans réponse pour ce bonus",
+      points: silenceBonus,
+      maxPoints: 10,
+    },
+  ];
+
+  return { score, priority, reasoning, breakdown };
 }
 
 function buildReasoning(args: {

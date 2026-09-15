@@ -44,7 +44,7 @@ export function PortfolioAutopilot({ pendingCount }: { pendingCount: number }) {
           </h2>
           <p className="mt-0.5 text-sm text-graphite/70">
             {pendingCount > 0
-              ? `Yasmine traite d'affilée les ${pendingCount} dossier(s) qui ont une relance due aujourd'hui — sans ouvrir chaque dossier un par un.`
+              ? `Yas traite d'affilée les ${pendingCount} dossier(s) qui ont une relance due aujourd'hui — sans ouvrir chaque dossier un par un.`
               : "Aucun dossier n'a de relance automatique due pour l'instant — tout est à jour."}
           </p>
         </div>
@@ -53,7 +53,7 @@ export function PortfolioAutopilot({ pendingCount }: { pendingCount: number }) {
           disabled={running || pendingCount === 0}
           className="shrink-0 rounded-lg bg-indigo-deep px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
         >
-          {running ? "Yasmine travaille…" : `Lancer Yasmine sur le portefeuille`}
+          {running ? "Yas travaille…" : `Lancer Yas sur le portefeuille`}
         </button>
       </div>
 
