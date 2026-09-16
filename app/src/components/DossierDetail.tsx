@@ -190,6 +190,9 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
           <p className="text-sm text-graphite/60">
             {item.sector} · {item.contactName} · {item.contactEmail} · {item.contactPhone}
           </p>
+          <a href={`/customers/${item.clientId}`} className="text-xs text-azur hover:underline">
+            Voir la fiche client complète (Customer 360) →
+          </a>
           <div className="mt-4 rounded-lg bg-perle p-3 text-sm text-graphite">{item.behaviorNote}</div>
 
           {item.replies.length === 0 && (

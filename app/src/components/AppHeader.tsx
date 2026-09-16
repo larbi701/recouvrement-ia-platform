@@ -4,9 +4,11 @@ import { LogoWordmark } from "@/components/Logo";
 const NAV_LINKS = [
   { href: "/cockpit", label: "Action Center" },
   { href: "/dossiers", label: "Work Queues" },
+  { href: "/customers", label: "Customer 360" },
   { href: "/dashboard", label: "Executive Dashboard" },
   { href: "/forecast", label: "Cash Forecast" },
   { href: "/agents", label: "Agent Hub" },
+  { href: "/import", label: "Importer" },
 ];
 
 export function AppHeader({ breadcrumb }: { breadcrumb?: { label: string; href?: string }[] }) {
