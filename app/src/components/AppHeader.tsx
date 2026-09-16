@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { LogoWordmark } from "@/components/Logo";
 
+// Ordre du plus général (vue globale du portefeuille) au plus particulier (le système
+// lui-même) — suit la séquence réelle du workflow (§9 des specs) : on alimente d'abord
+// la plateforme, on regarde l'ensemble, puis on affine progressivement le niveau de zoom.
 const NAV_LINKS = [
-  { href: "/cockpit", label: "Action Center" },
-  { href: "/dossiers", label: "Work Queues" },
-  { href: "/customers", label: "Customer 360" },
-  { href: "/dashboard", label: "Executive Dashboard" },
-  { href: "/forecast", label: "Cash Forecast" },
-  { href: "/agents", label: "Agent Hub" },
-  { href: "/import", label: "Importer" },
+  { href: "/import", label: "Importer", numbering: null },
+  { href: "/dashboard", label: "Executive Dashboard", numbering: "01" },
+  { href: "/cockpit", label: "Action Center", numbering: "02" },
+  { href: "/dossiers", label: "Work Queues", numbering: "03" },
+  { href: "/customers", label: "Customer 360", numbering: "05" },
+  { href: "/forecast", label: "Cash Forecast", numbering: "08" },
+  { href: "/agents", label: "Agent Hub", numbering: "07" },
 ];
 
 export function AppHeader({ breadcrumb }: { breadcrumb?: { label: string; href?: string }[] }) {
@@ -26,11 +29,15 @@ export function AppHeader({ breadcrumb }: { breadcrumb?: { label: string; href?:
       </div>
 
       {showNav && (
-        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-4 gap-y-1 px-6 pb-3 text-xs font-medium">
-          {NAV_LINKS.map((link) => (
-            <Link key={link.href} href={link.href} className="text-graphite/60 hover:text-indigo-deep">
-              {link.label}
-            </Link>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1 px-6 pb-3 text-xs font-medium">
+          {NAV_LINKS.map((link, i) => (
+            <span key={link.href} className="flex items-center gap-x-4">
+              {i === 1 && <span className="h-3 w-px bg-lavande-struct" aria-hidden />}
+              <Link href={link.href} className="flex items-center gap-1 text-graphite/60 hover:text-indigo-deep">
+                {link.numbering && <span className="text-graphite/30">{link.numbering}</span>}
+                {link.label}
+              </Link>
+            </span>
           ))}
         </div>
       )}
