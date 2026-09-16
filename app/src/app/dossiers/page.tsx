@@ -29,7 +29,7 @@ export default async function DossiersPage({
         breadcrumb={[
           { label: "Yas", href: "/" },
           { label: "Centre d'action", href: "/cockpit" },
-          { label: "Files de travail" },
+          { label: "Dossiers par priorité" },
         ]}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">

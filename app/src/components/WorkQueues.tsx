@@ -20,37 +20,37 @@ export function getWorkQueues(
   return [
     {
       key: "urgent",
-      label: "Urgent Cases",
+      label: "Urgent",
       description: "Priorité haute ou playbook avancé (intensif, pré-contentieux, transmission avocat)",
       match: (i) => i.priority === "URGENT" || ["INTENSIVE", "PRE_LEGAL", "LEGAL_TRANSFER"].includes(i.playbook),
     },
     {
       key: "high_value",
-      label: "High Value",
+      label: "Gros montants",
       description: `Factures de plus de ${hitlAmountThreshold.toLocaleString("fr-FR")} MAD`,
       match: (i) => i.amountMad > hitlAmountThreshold,
     },
     {
       key: "promises",
-      label: "Promises Due",
+      label: "Promesses en cours",
       description: "Promesse de paiement en cours, suivie par le Promise To Pay Manager",
       match: (i) => i.promises.some((p) => p.status === "EN_COURS"),
     },
     {
       key: "strategic",
-      label: "Strategic Accounts",
+      label: "Comptes stratégiques",
       description: "Comptes stratégiques — traités avec tact, jamais en pur automatique",
       match: (i) => i.strategic,
     },
     {
       key: "disputes",
-      label: "Disputes",
+      label: "Litiges",
       description: "Litige signalé par le client, analysé par le Dispute Specialist",
       match: (i) => i.replies.some((r) => r.classifiedIntent === "CONTESTATION"),
     },
     {
       key: "validation",
-      label: "Pending Validation",
+      label: "En attente de validation",
       description: "Action proposée par Yas, en attente de validation humaine",
       match: (i) =>
         i.nextAction.kind === "LEGAL_TRANSFER" ||

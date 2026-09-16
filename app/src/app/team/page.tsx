@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
 import { getSettings } from "@/lib/settings";
+import { buildActivityFeed } from "@/lib/activity";
 import { AppHeader } from "@/components/AppHeader";
 
 export const dynamic = "force-dynamic";
@@ -13,11 +14,12 @@ const OUTCOME_LABELS: Record<string, string> = {
   AUTRE: "Autre",
 };
 
-// §12.09 Performance équipe — le miroir humain de l'Agent Hub : ce que l'équipe a traité
-// elle-même (appels, validations), pas ce que Yas a fait seule. Vue agrégée pour
-// l'instant — pas encore de suivi nominatif par collaborateur (pas de notion
-// d'utilisateur/compte dans ce POC).
-export default async function TeamPerformancePage() {
+// §12.09 Interventions humaines — volontairement pas un tableau de bord "performance
+// équipe" façon RH : le produit vise à automatiser la grande majorité du recouvrement,
+// donc cet écran documente l'exception (appels, validations obligatoires, litiges), pas
+// une activité qu'on cherche à maximiser. Le taux d'automatisation en tête de page est
+// la preuve chiffrée que l'essentiel du travail est fait par Yas, pas par l'équipe.
+export default async function HumanInterventionsPage() {
   const [invoices, settings] = await Promise.all([
     prisma.invoice.findMany({
       include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
@@ -26,7 +28,12 @@ export default async function TeamPerformancePage() {
   ]);
   const items = invoices.map((invoice) => buildWorklistItem(invoice, settings));
 
-  const humanReminders = items.flatMap((i) => i.reminders).filter((r) => r.createdBy === "HUMAIN");
+  const activity = buildActivityFeed(items, 1000);
+  const agentActionCount = activity.filter((e) => e.actor === "AGENT").length;
+  const humanActionCount = activity.filter((e) => e.actor === "HUMAIN").length;
+  const totalActionCount = agentActionCount + humanActionCount;
+  const automationRate = totalActionCount > 0 ? Math.round((agentActionCount / totalActionCount) * 100) : null;
+
   const completedCalls = items.flatMap((i) => i.callTasks).filter((c) => c.status === "FAIT");
   const allPromises = items.flatMap((i) => i.promises);
   const kept = allPromises.filter((p) => p.status === "TENUE");
@@ -44,7 +51,6 @@ export default async function TeamPerformancePage() {
   }
 
   const kpis = [
-    { label: "Actions humaines réalisées", value: (humanReminders.length + completedCalls.length).toString(), hint: "Relances envoyées manuellement + appels traités" },
     { label: "Appels traités", value: completedCalls.length.toString(), hint: "Fiches d'appel préparées par Yas, traitées par l'équipe" },
     { label: "Fiabilité des promesses obtenues", value: reliabilityRate !== null ? `${reliabilityRate}%` : "—", hint: `${kept.length} tenue(s) / ${broken.length} rompue(s)` },
     { label: "Montant sécurisé", value: `${securedMad.toLocaleString("fr-FR")} MAD`, hint: "Promesses de paiement tenues" },
@@ -53,14 +59,37 @@ export default async function TeamPerformancePage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Performance équipe" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Interventions humaines" }]} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <p className="mb-4 text-sm text-graphite/60">
-          Le pendant humain des Agents IA — ce que l&apos;équipe a traité elle-même. Vue agrégée pour ce POC,
-          pas encore de suivi nominatif par collaborateur.
+          L&apos;objectif du produit est que Yas traite la grande majorité du portefeuille seule. L&apos;équipe
+          n&apos;intervient que sur les exceptions prévues par les règles de validation (
+          <a href="/settings" className="text-azur hover:underline">
+            Paramètres
+          </a>
+          ) : appels, comptes stratégiques, litiges, dossiers pré-contentieux. Cette page mesure donc volontairement
+          une activité restreinte, pas une performance à maximiser.
         </p>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {automationRate !== null && (
+          <div className="mb-6 rounded-xl border border-lavande-struct bg-white p-5">
+            <div className="flex items-baseline justify-between">
+              <p className="text-xs font-medium uppercase tracking-wide text-graphite/60">
+                Part du travail traitée par Yas sans intervention humaine
+              </p>
+              <p className="text-2xl font-bold text-violet-velos">{automationRate}%</p>
+            </div>
+            <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-lavande-struct">
+              <div className="bg-violet-velos" style={{ width: `${automationRate}%` }} />
+              <div className="bg-azur" style={{ width: `${100 - automationRate}%` }} />
+            </div>
+            <p className="mt-2 text-xs text-graphite/50">
+              {agentActionCount} action(s) menées par les agents IA · {humanActionCount} intervention(s) humaine(s)
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {kpis.map((kpi) => (
             <div key={kpi.label} className="rounded-xl border border-lavande-struct bg-white p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-graphite/60">{kpi.label}</p>

@@ -57,7 +57,7 @@ export default async function ActionCenter() {
         </div>
 
         <div className="mt-8">
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">Files de travail</h2>
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">Dossiers par priorité</h2>
           <p className="mb-3 text-xs text-graphite/50">
             Le même portefeuille, vu sous plusieurs angles — clique une file pour l&apos;ouvrir.
           </p>

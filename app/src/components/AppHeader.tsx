@@ -8,12 +8,12 @@ const NAV_LINKS = [
   { href: "/import", label: "Importer", numbering: null },
   { href: "/dashboard", label: "Tableau de bord", numbering: "01" },
   { href: "/cockpit", label: "Centre d'action", numbering: "02" },
-  { href: "/dossiers", label: "Files de travail", numbering: "03" },
+  { href: "/dossiers", label: "Dossiers par priorité", numbering: "03" },
   { href: "/portfolio", label: "Portefeuille", numbering: "04" },
   { href: "/customers", label: "Vue client 360", numbering: "05" },
   { href: "/forecast", label: "Prévisions de trésorerie", numbering: "08" },
   { href: "/agents", label: "Agents IA", numbering: "07" },
-  { href: "/team", label: "Performance équipe", numbering: "09" },
+  { href: "/team", label: "Interventions humaines", numbering: "09" },
   { href: "/settings", label: "Paramètres", numbering: "10" },
 ];
 

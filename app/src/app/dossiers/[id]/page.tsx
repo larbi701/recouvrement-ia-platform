@@ -28,7 +28,7 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
         breadcrumb={[
           { label: "Yas", href: "/" },
           { label: "Centre d'action", href: "/cockpit" },
-          { label: "Files de travail", href: "/dossiers" },
+          { label: "Dossiers par priorité", href: "/dossiers" },
           { label: item.clientName },
         ]}
       />
