@@ -22,6 +22,29 @@ const NEXT_ACTION_LABELS: Record<string, string> = {
   LEGAL_TRANSFER: "Transmission avocat",
 };
 
+function SortHeader({
+  label,
+  sortKeyValue,
+  activeSortKey,
+  sortDir,
+  onToggle,
+}: {
+  label: string;
+  sortKeyValue: SortKey;
+  activeSortKey: SortKey;
+  sortDir: "asc" | "desc";
+  onToggle: (key: SortKey) => void;
+}) {
+  return (
+    <th
+      onClick={() => onToggle(sortKeyValue)}
+      className="cursor-pointer select-none border-b border-lavande-struct p-2 text-left text-xs font-medium uppercase tracking-wide text-graphite/60 hover:text-indigo-deep"
+    >
+      {label} {activeSortKey === sortKeyValue && (sortDir === "asc" ? "↑" : "↓")}
+    </th>
+  );
+}
+
 export function PortfolioTable({ items }: { items: WorklistItem[] }) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
@@ -55,17 +78,6 @@ export function PortfolioTable({ items }: { items: WorklistItem[] }) {
 
   const totalMad = filtered.reduce((sum, i) => sum + i.amountMad, 0);
 
-  function SortHeader({ label, sortKeyValue }: { label: string; sortKeyValue: SortKey }) {
-    return (
-      <th
-        onClick={() => toggleSort(sortKeyValue)}
-        className="cursor-pointer select-none border-b border-lavande-struct p-2 text-left text-xs font-medium uppercase tracking-wide text-graphite/60 hover:text-indigo-deep"
-      >
-        {label} {sortKey === sortKeyValue && (sortDir === "asc" ? "↑" : "↓")}
-      </th>
-    );
-  }
-
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -85,16 +97,16 @@ export function PortfolioTable({ items }: { items: WorklistItem[] }) {
         <table className="min-w-full text-sm">
           <thead>
             <tr>
-              <SortHeader label="Client" sortKeyValue="clientName" />
+              <SortHeader label="Client" sortKeyValue="clientName" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
               <th className="border-b border-lavande-struct p-2 text-left text-xs font-medium uppercase tracking-wide text-graphite/60">
                 Référence
               </th>
-              <SortHeader label="Montant" sortKeyValue="amountMad" />
-              <SortHeader label="Retard" sortKeyValue="daysOverdue" />
+              <SortHeader label="Montant" sortKeyValue="amountMad" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+              <SortHeader label="Retard" sortKeyValue="daysOverdue" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
               <th className="border-b border-lavande-struct p-2 text-left text-xs font-medium uppercase tracking-wide text-graphite/60">
                 Playbook
               </th>
-              <SortHeader label="Score" sortKeyValue="score" />
+              <SortHeader label="Score" sortKeyValue="score" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
               <th className="border-b border-lavande-struct p-2 text-left text-xs font-medium uppercase tracking-wide text-graphite/60">
                 Prochaine action
               </th>

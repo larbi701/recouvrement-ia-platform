@@ -58,7 +58,7 @@ export function PriorityActions({ items, limit = 5 }: { items: WorklistItem[]; l
                   <div>
                     <p className="text-sm font-medium text-indigo-deep">
                       {item.clientName} — {ACTION_LABELS[kind]}
-                      {item.nextAction.kind !== "CALL_TASK" && (
+                      {"tone" in item.nextAction && (
                         <span className="ml-1 font-normal text-graphite/50">({item.nextAction.tone})</span>
                       )}
                     </p>
