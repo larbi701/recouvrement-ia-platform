@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
+import { getSettings } from "@/lib/settings";
+
+const VALID_INTENTS = ["DEMANDE_DELAI", "CONTESTATION", "CONFIRMATION", "AUTRE"] as const;
 
 // Agent "Négociateur" — en direct : lit une réponse du client, la classe, la résume,
 // et propose une action. C'est la brique qui manquait (les réponses du scénario de
@@ -12,16 +15,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
   }
 
-  const invoice = await prisma.invoice.findUnique({
-    where: { id: invoiceId },
-    include: { client: true, reminders: true },
-  });
+  const [invoice, settings] = await Promise.all([
+    prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { client: true, reminders: true },
+    }),
+    getSettings(),
+  ]);
 
   if (!invoice) {
     return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
   }
 
-  const prompt = `Tu es l'agent qui traite les réponses des clients en retard de paiement pour "Meridian Distribution" (PME marocaine, B2B). Un client vient de répondre à une relance. Analyse sa réponse.
+  const prompt = `Tu es l'agent qui traite les réponses des clients en retard de paiement pour "${settings.companyName}" (PME marocaine, B2B). Un client vient de répondre à une relance. Analyse sa réponse.
 
 Contexte :
 - Client : ${invoice.client.name}
@@ -59,6 +65,18 @@ Règles pour proposedAction :
     parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
   } catch {
     return NextResponse.json({ error: "Réponse de l'agent illisible, réessaie." }, { status: 502 });
+  }
+
+  // Validation de sortie : si le modèle renvoie une intention hors de l'énumération attendue
+  // (ou un champ manquant), on ne stocke jamais une valeur inconnue — repli sur AUTRE, qui
+  // ne déclenche aucune action automatique et force une lecture humaine du dossier.
+  const isValidIntent = (VALID_INTENTS as readonly string[]).includes(parsed.classifiedIntent);
+  if (!isValidIntent || !parsed.agentSummary || !parsed.proposedAction) {
+    parsed = {
+      classifiedIntent: "AUTRE",
+      agentSummary: parsed.agentSummary || "Réponse reçue, non classée automatiquement (sortie de l'agent invalide).",
+      proposedAction: "Sortie de l'agent hors format attendu — à lire directement par un humain.",
+    };
   }
 
   const reply = await prisma.clientReply.create({

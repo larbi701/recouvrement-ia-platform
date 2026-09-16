@@ -9,6 +9,8 @@ export async function POST(req: Request) {
     standardMaxDays,
     intensiveMaxDays,
     preLegalMaxDays,
+    companyName,
+    companySector,
   } = body;
 
   const values = [hitlAmountThreshold, earlyMaxDays, standardMaxDays, intensiveMaxDays, preLegalMaxDays];
@@ -21,11 +23,24 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+  if (typeof companyName !== "string" || !companyName.trim() || typeof companySector !== "string" || !companySector.trim()) {
+    return NextResponse.json({ error: "La raison sociale et le secteur ne peuvent pas être vides" }, { status: 400 });
+  }
+
+  const data = {
+    hitlAmountThreshold,
+    earlyMaxDays,
+    standardMaxDays,
+    intensiveMaxDays,
+    preLegalMaxDays,
+    companyName: companyName.trim(),
+    companySector: companySector.trim(),
+  };
 
   const settings = await prisma.settings.upsert({
     where: { id: "singleton" },
-    update: { hitlAmountThreshold, earlyMaxDays, standardMaxDays, intensiveMaxDays, preLegalMaxDays },
-    create: { id: "singleton", hitlAmountThreshold, earlyMaxDays, standardMaxDays, intensiveMaxDays, preLegalMaxDays },
+    update: data,
+    create: { id: "singleton", ...data },
   });
 
   return NextResponse.json({ settings });

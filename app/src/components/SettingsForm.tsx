@@ -35,6 +35,31 @@ function Field({
   );
 }
 
+function TextField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-lg border border-lavande-struct p-3">
+      <label className="text-sm font-medium text-indigo-deep">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded-lg border border-lavande-struct p-2 text-sm text-graphite focus:border-violet-velos focus:outline-none"
+      />
+      <p className="mt-1 text-xs text-graphite/50">{hint}</p>
+    </div>
+  );
+}
+
 export function SettingsForm({ initial }: { initial: PlatformSettings }) {
   const router = useRouter();
   const [values, setValues] = useState<PlatformSettings>(initial);
@@ -42,7 +67,7 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function set<K extends keyof PlatformSettings>(key: K, v: number) {
+  function set<K extends keyof PlatformSettings>(key: K, v: PlatformSettings[K]) {
     setValues((prev) => ({ ...prev, [key]: v }));
   }
 
@@ -51,10 +76,29 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
     setError(null);
     setMessage(null);
     try {
+      // simulatedDate n'est jamais envoyé depuis ce formulaire — seule l'horloge de démo
+      // (bandeau, +1j/+7j) est autorisée à la modifier.
+      const {
+        hitlAmountThreshold,
+        earlyMaxDays,
+        standardMaxDays,
+        intensiveMaxDays,
+        preLegalMaxDays,
+        companyName,
+        companySector,
+      } = values;
       const res = await fetch("/api/settings/update", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          hitlAmountThreshold,
+          earlyMaxDays,
+          standardMaxDays,
+          intensiveMaxDays,
+          preLegalMaxDays,
+          companyName,
+          companySector,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Échec de l'enregistrement");
@@ -69,6 +113,29 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="rounded-xl border border-lavande-struct bg-white p-5">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">
+          Identité de l&apos;entreprise créancière
+        </h2>
+        <p className="mb-3 text-xs text-graphite/50">
+          Le nom qui signe les relances générées par Yas — changez-le pour adapter la démo à chaque prospect.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <TextField
+            label="Raison sociale"
+            value={values.companyName}
+            onChange={(v) => set("companyName", v)}
+            hint="Utilisée telle quelle dans la signature des emails, WhatsApp et fiches d'appel générés."
+          />
+          <TextField
+            label="Secteur"
+            value={values.companySector}
+            onChange={(v) => set("companySector", v)}
+            hint="Donne le contexte à l'agent qui rédige les messages."
+          />
+        </div>
+      </div>
+
       <div className="rounded-xl border border-lavande-struct bg-white p-5">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-graphite/60">
           Validation humaine obligatoire

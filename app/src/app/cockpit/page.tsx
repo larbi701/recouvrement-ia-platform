@@ -30,7 +30,7 @@ export default async function ActionCenter() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Centre d'action" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Centre d'action" }]} simulatedDate={settings.simulatedDate} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <div className="mb-2 flex items-center justify-between">
@@ -69,7 +69,7 @@ export default async function ActionCenter() {
           <p className="mb-2 text-xs text-graphite/50">
             Ce que Yas (et l&apos;humain, en relais) vient de faire sur le portefeuille.
           </p>
-          <ActivityFeed events={activity} />
+          <ActivityFeed events={activity} now={settings.simulatedDate} />
         </div>
       </main>
     </div>

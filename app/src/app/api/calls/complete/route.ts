@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSettings } from "@/lib/settings";
 
 export async function POST(req: Request) {
   const { callTaskId, outcome, outcomeNote, promisedDate } = await req.json();
@@ -8,6 +9,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
   }
 
+  const settings = await getSettings();
+
   const callTask = await prisma.callTask.update({
     where: { id: callTaskId },
     data: {
@@ -15,7 +18,7 @@ export async function POST(req: Request) {
       outcome,
       outcomeNote: outcomeNote || null,
       promisedDate: promisedDate ? new Date(promisedDate) : null,
-      completedAt: new Date(),
+      completedAt: settings.simulatedDate,
     },
   });
 

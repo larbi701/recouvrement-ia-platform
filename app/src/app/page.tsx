@@ -137,7 +137,7 @@ export default async function Presentation() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader />
+      <AppHeader simulatedDate={settings.simulatedDate} />
 
       <main className="mx-auto w-full max-w-4xl flex-1 px-6 pb-16">
         <div className="flex flex-col items-center pt-12 text-center">

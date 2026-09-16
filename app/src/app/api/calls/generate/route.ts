@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
+import { getSettings } from "@/lib/settings";
 
 // L'IA ne passe pas l'appel elle-même (pas d'agent vocal dans ce POC) : elle prépare
 // une fiche d'appel pour un humain, et crée la tâche à traiter. Voir MEMOIRE-PROJET.md
@@ -8,10 +9,13 @@ import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 export async function POST(req: Request) {
   const { invoiceId, reason } = await req.json();
 
-  const invoice = await prisma.invoice.findUnique({
-    where: { id: invoiceId },
-    include: { client: true, reminders: true, replies: true },
-  });
+  const [invoice, settings] = await Promise.all([
+    prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { client: true, reminders: true, replies: true },
+    }),
+    getSettings(),
+  ]);
 
   if (!invoice) {
     return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
@@ -19,7 +23,7 @@ export async function POST(req: Request) {
 
   const daysOverdue = Math.max(
     0,
-    Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000)
+    Math.floor((settings.simulatedDate.getTime() - invoice.dueDate.getTime()) / 86_400_000)
   );
 
   const historySummary = invoice.reminders.length
@@ -28,7 +32,7 @@ export async function POST(req: Request) {
         .join(", ")}), sans paiement à ce jour.`
     : "Aucune relance écrite envoyée pour l'instant.";
 
-  const prompt = `Tu prépares une fiche d'appel courte pour un chargé de recouvrement humain qui va appeler un client B2B en retard de paiement, pour "Meridian Distribution" (PME marocaine).
+  const prompt = `Tu prépares une fiche d'appel courte pour un chargé de recouvrement humain qui va appeler un client B2B en retard de paiement, pour "${settings.companyName}" (PME marocaine).
 
 Contexte :
 - Client : ${invoice.client.name} (contact : ${invoice.client.contactName})

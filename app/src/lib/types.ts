@@ -57,6 +57,7 @@ export type WorklistItem = {
   behaviorNote: string;
   strategic: boolean;
   chronicLatePayer: boolean;
+  isPublicDebtor: boolean;
   reminders: ReminderDTO[];
   replies: ReplyDTO[];
   callTasks: CallTaskDTO[];

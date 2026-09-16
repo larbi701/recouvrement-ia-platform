@@ -20,6 +20,7 @@ const NEXT_ACTION_LABELS: Record<string, string> = {
   WAIT_HUMAN: "Réponse à traiter",
   WAIT_PROMISE: "Attente de promesse",
   LEGAL_TRANSFER: "Transmission avocat",
+  PUBLIC_DEBTOR_REVIEW: "Débiteur public",
 };
 
 function SortHeader({

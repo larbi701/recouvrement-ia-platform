@@ -59,7 +59,7 @@ export default async function HumanInterventionsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Interventions humaines" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Interventions humaines" }]} simulatedDate={settings.simulatedDate} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <p className="mb-4 text-sm text-graphite/60">
           L&apos;objectif du produit est que Yas traite la grande majorité du portefeuille seule. L&apos;équipe

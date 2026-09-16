@@ -20,6 +20,7 @@ const NEXT_ACTION_LABELS: Record<WorklistItem["nextAction"]["kind"], string> = {
   WAIT_HUMAN: "→ Réponse client à traiter",
   WAIT_PROMISE: "→ En attente d'une promesse de paiement",
   LEGAL_TRANSFER: "→ Transmission avocat (validation obligatoire)",
+  PUBLIC_DEBTOR_REVIEW: "→ Débiteur public : revue manuelle",
 };
 
 export function DossierCards({ items }: { items: WorklistItem[] }) {
@@ -46,6 +47,11 @@ export function DossierCards({ items }: { items: WorklistItem[] }) {
                   {item.strategic && (
                     <span title="Client stratégique" className="text-violet-velos">
                       ★
+                    </span>
+                  )}
+                  {item.isPublicDebtor && (
+                    <span className="rounded-full bg-lavande-struct px-2 py-0.5 text-[11px] font-medium text-indigo-deep">
+                      Débiteur public
                     </span>
                   )}
                   {item.callTasks.some((c) => c.status === "A_FAIRE") && (

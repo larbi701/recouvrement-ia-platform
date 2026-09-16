@@ -17,6 +17,7 @@ model Client {
   behaviorNote      String // note de contexte utilisée par l'agent (ex: "client fiable, retard exceptionnel")
   strategic         Boolean   @default(false)
   chronicLatePayer  Boolean   @default(false) // ignore les emails -> l'agent saute direct au canal WhatsApp
+  isPublicDebtor    Boolean   @default(false) // organisme public : exclu des playbooks automatiques, décision humaine systématique
   invoices          Invoice[]
   createdAt         DateTime  @default(now())
 }
@@ -84,6 +85,9 @@ model Settings {
   standardMaxDays     Int      @default(60) // fin du playbook STANDARD
   intensiveMaxDays    Int      @default(90) // fin du playbook INTENSIVE
   preLegalMaxDays     Int      @default(120) // fin du playbook PRE_LEGAL = plafond légal (loi 69-21)
+  companyName         String   @default("Anfa Distribution SARL") // raison sociale du créancier, utilisée dans les messages générés
+  companySector       String   @default("Distribution B2B de fournitures industrielles")
+  simulatedDate       DateTime @default(now()) // horloge de démo pilotée par +1j/+7j — jamais l'heure réelle dans la logique métier
   updatedAt           DateTime @updatedAt
 }
 

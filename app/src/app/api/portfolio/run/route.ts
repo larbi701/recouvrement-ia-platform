@@ -26,12 +26,22 @@ export async function POST() {
   });
 
   const results: { clientName: string; channel: string; tone: string; snippet: string }[] = [];
+  const blocked: { clientName: string; violations: string[] }[] = [];
 
   for (const invoice of toProcess) {
     const item = buildWorklistItem(invoice, settings);
     if (item.nextAction.kind !== "EMAIL" && item.nextAction.kind !== "WHATSAPP") continue;
 
-    const { draft, tone } = await generateReminderDraft(invoice, item.nextAction.kind);
+    const { draft, tone, guardrail } = await generateReminderDraft(invoice, item.nextAction.kind, settings);
+
+    // Garde-fou de contenu : un message qui échoue au contrôle (terme interdit, montant ou
+    // référence qui ne correspond pas au dossier) n'est jamais auto-envoyé, même si le
+    // niveau de validation du playbook ne l'exigeait pas — Collection Supervisor le
+    // renvoie systématiquement à un humain plutôt que de le laisser partir tel quel.
+    if (!guardrail.ok) {
+      blocked.push({ clientName: invoice.client.name, violations: guardrail.violations });
+      continue;
+    }
 
     await prisma.reminder.create({
       data: {
@@ -52,5 +62,5 @@ export async function POST() {
     });
   }
 
-  return NextResponse.json({ results });
+  return NextResponse.json({ results, blocked });
 }

@@ -42,7 +42,7 @@ export default async function ExecutiveDashboard() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Tableau de bord" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Tableau de bord" }]} simulatedDate={settings.simulatedDate} />
       <KpiHeader totalOverdueMad={totalOverdueMad} dossierCount={items.length} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">

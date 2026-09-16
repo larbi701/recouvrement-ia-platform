@@ -11,22 +11,26 @@ const TONE_LABELS: Record<string, string> = {
 };
 
 type RunResult = { clientName: string; channel: string; tone: string; snippet: string };
+type BlockedResult = { clientName: string; violations: string[] };
 
 export function PortfolioAutopilot({ pendingCount }: { pendingCount: number }) {
   const router = useRouter();
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<RunResult[] | null>(null);
+  const [blocked, setBlocked] = useState<BlockedResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleRun() {
     setRunning(true);
     setError(null);
     setResults(null);
+    setBlocked(null);
     try {
       const res = await fetch("/api/portfolio/run", { method: "POST" });
       if (!res.ok) throw new Error("Échec du pilotage automatique");
-      const data: { results: RunResult[] } = await res.json();
+      const data: { results: RunResult[]; blocked: BlockedResult[] } = await res.json();
       setResults(data.results);
+      setBlocked(data.blocked);
       router.refresh();
     } catch {
       setError("Erreur — vérifie que ta clé API Claude est bien renseignée dans .env.local");
@@ -76,6 +80,20 @@ export function PortfolioAutopilot({ pendingCount }: { pendingCount: number }) {
                 ✓ {r.clientName} — {CHANNEL_LABELS[r.channel] ?? r.channel} ({TONE_LABELS[r.tone] ?? r.tone})
               </p>
               <p className="mt-0.5 text-xs text-graphite/60">{r.snippet}…</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {blocked && blocked.length > 0 && (
+        <div className="mt-4 flex flex-col gap-2 border-t border-corail/30 pt-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-corail">
+            {blocked.length} message(s) retenu(s) par le garde-fou — à traiter manuellement
+          </p>
+          {blocked.map((b, i) => (
+            <div key={i} className="rounded-lg border border-corail/30 bg-corail/5 p-2.5 text-sm">
+              <p className="font-medium text-indigo-deep">{b.clientName}</p>
+              <p className="mt-0.5 text-xs text-graphite/60">{b.violations.join(" · ")}</p>
             </div>
           ))}
         </div>

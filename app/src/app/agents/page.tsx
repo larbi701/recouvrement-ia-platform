@@ -38,7 +38,7 @@ export default async function AgentHubPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Agents IA" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Agents IA" }]} simulatedDate={settings.simulatedDate} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <p className="mb-4 text-sm text-graphite/60">
           Yas est le visage unique que vous voyez au quotidien — en coulisses, 7 agents spécialisés collaborent via

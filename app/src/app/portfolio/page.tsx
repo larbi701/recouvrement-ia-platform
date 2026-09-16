@@ -20,7 +20,7 @@ export default async function PortfolioPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Portefeuille" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Portefeuille" }]} simulatedDate={settings.simulatedDate} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <PortfolioTable items={items} />
       </main>

@@ -17,12 +17,12 @@ export default async function CashForecastPage() {
     getSettings(),
   ]);
   const items = invoices.map((invoice) => buildWorklistItem(invoice, settings));
-  const { horizons, contributions } = computeCashForecast(items);
+  const { horizons, contributions } = computeCashForecast(items, settings.simulatedDate);
   const maxMad = Math.max(...horizons.map((h) => h.cumulativeMad), 1);
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Prévisions de trésorerie" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Prévisions de trésorerie" }]} simulatedDate={settings.simulatedDate} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <Link href="/cockpit" className="text-sm text-azur hover:underline">

@@ -21,6 +21,7 @@ async function main() {
   await prisma.promiseToPay.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.client.deleteMany();
+  await prisma.settings.deleteMany();
 
   // 1. Client fiable, léger retard
   const atlas = await prisma.client.create({
@@ -167,6 +168,20 @@ async function main() {
       promisedDate: daysFromNow(5),
       status: "EN_COURS",
       source: "REPONSE",
+    },
+  });
+  // Première mensualité de l'échéancier, déjà honorée — seul cas TENUE du jeu de données,
+  // pour que la fiabilité des promesses affichée sur Interventions humaines ne soit pas
+  // uniquement portée par le cas rompu (Rif Agro Export, cf. client 11).
+  await prisma.promiseToPay.create({
+    data: {
+      invoiceId: cosmetiquesInvoice.id,
+      amountMad: 21_667,
+      promisedDate: daysAgo(19),
+      status: "TENUE",
+      source: "REPONSE",
+      createdAt: daysAgo(24),
+      resolvedAt: daysAgo(19),
     },
   });
 
@@ -329,7 +344,172 @@ async function main() {
     },
   });
 
-  console.log("Jeu de données synthétique créé : 7 clients, 7 factures.");
+  // 8. Débiteur public — jamais de playbook automatique, revue humaine systématique
+  const commune = await prisma.client.create({
+    data: {
+      name: "Commune Urbaine d'Oujda — Services Techniques",
+      sector: "Administration publique",
+      contactName: "Service des marchés publics",
+      contactEmail: "marches.publics@oujda-municipalite.ma",
+      contactPhone: "+212 5 36 68 20 00",
+      behaviorNote: "Organisme public — délais et voies de recouvrement distincts (commande publique), traité hors playbooks automatiques.",
+      strategic: false,
+      chronicLatePayer: false,
+      isPublicDebtor: true,
+    },
+  });
+  await prisma.invoice.create({
+    data: {
+      clientId: commune.id,
+      reference: "FAC-2026-0182",
+      amountMad: 96_000,
+      issueDate: daysAgo(105),
+      dueDate: daysAgo(45),
+      status: "EN_RETARD",
+    },
+  });
+
+  // 9. Silence total au-delà du plafond légal — démontre le playbook LEGAL_TRANSFER (120j+)
+  const casaMetal = await prisma.client.create({
+    data: {
+      name: "Casa Métal Industrie",
+      sector: "Métallurgie",
+      contactName: "Omar Zeroual",
+      contactEmail: "o.zeroual@casametal.ma",
+      contactPhone: "+212 6 68 99 00 11",
+      behaviorNote: "Silence total depuis plus de 130 jours malgré 5 relances et 2 appels sans réponse — dépasse le plafond légal de 120 jours (loi 69-21).",
+      strategic: false,
+      chronicLatePayer: true,
+    },
+  });
+  const casaMetalInvoice = await prisma.invoice.create({
+    data: {
+      clientId: casaMetal.id,
+      reference: "FAC-2026-0055",
+      amountMad: 78_000,
+      issueDate: daysAgo(190),
+      dueDate: daysAgo(130),
+      status: "EN_RETARD",
+    },
+  });
+  for (const [i, { days, channel, tone }] of [
+    { days: 110, channel: "WHATSAPP", tone: "FERME" },
+    { days: 85, channel: "WHATSAPP", tone: "FERME" },
+    { days: 60, channel: "EMAIL", tone: "MISE_EN_DEMEURE" },
+    { days: 35, channel: "EMAIL", tone: "MISE_EN_DEMEURE" },
+    { days: 20, channel: "EMAIL", tone: "MISE_EN_DEMEURE" },
+  ].entries()) {
+    await prisma.reminder.create({
+      data: {
+        invoiceId: casaMetalInvoice.id,
+        channel,
+        tone,
+        content: `Relance ${i + 1} sur la facture FAC-2026-0055 (78 000 MAD) — toujours sans réponse.`,
+        status: "ENVOYEE_SIMULEE",
+        createdBy: "AGENT",
+        sentAt: daysAgo(days),
+      },
+    });
+  }
+  await prisma.callTask.create({
+    data: {
+      invoiceId: casaMetalInvoice.id,
+      reason: "Dernière tentative avant transmission avocat — aucune réponse écrite depuis 4 mois.",
+      talkingPoints:
+        "1. Rappeler la facture FAC-2026-0055 (78 000 MAD) et les 130 jours de retard.\n2. Vérifier une dernière fois l'absence de litige non signalé.\n3. Prévenir explicitement du passage en procédure de recouvrement en l'absence de réponse sous 8 jours.",
+      status: "FAIT",
+      outcome: "NE_REPOND_PAS",
+      outcomeNote: "Deux tentatives sur la ligne directe, aucune réponse.",
+      createdAt: daysAgo(80),
+      completedAt: daysAgo(80),
+    },
+  });
+
+  // 10. Recouvrement standard, cas sans complication — élargit le portefeuille au-delà des cas dramatiques
+  const nordPlast = await prisma.client.create({
+    data: {
+      name: "Nord Plast Emballages",
+      sector: "Plasturgie / emballage",
+      contactName: "Leila Sekkat",
+      contactEmail: "l.sekkat@nordplast.ma",
+      contactPhone: "+212 6 69 11 22 33",
+      behaviorNote: "Client récent, deuxième facture, aucun incident sur la première.",
+      strategic: false,
+      chronicLatePayer: false,
+    },
+  });
+  const nordPlastInvoice = await prisma.invoice.create({
+    data: {
+      clientId: nordPlast.id,
+      reference: "FAC-2026-0190",
+      amountMad: 51_200,
+      issueDate: daysAgo(105),
+      dueDate: daysAgo(45),
+      status: "EN_RETARD",
+    },
+  });
+  await prisma.reminder.create({
+    data: {
+      invoiceId: nordPlastInvoice.id,
+      channel: "EMAIL",
+      tone: "FERME",
+      content: "Relance concernant la facture FAC-2026-0190 (51 200 MAD), échéance dépassée de 45 jours.",
+      status: "ENVOYEE_SIMULEE",
+      createdBy: "AGENT",
+      sentAt: daysAgo(20),
+    },
+  });
+
+  // 11. Promesse non tenue — seul cas ROMPUE du jeu de données, alimente la fiabilité des
+  // promesses affichée sur Interventions humaines (vide sans ce cas).
+  const rifAgro = await prisma.client.create({
+    data: {
+      name: "Rif Agro Export",
+      sector: "Agroalimentaire / export",
+      contactName: "Younes Berrada",
+      contactEmail: "y.berrada@rifagro.ma",
+      contactPhone: "+212 6 70 22 33 44",
+      behaviorNote: "Avait promis un paiement le 5 du mois par téléphone, engagement non tenu depuis.",
+      strategic: false,
+      chronicLatePayer: false,
+    },
+  });
+  const rifAgroInvoice = await prisma.invoice.create({
+    data: {
+      clientId: rifAgro.id,
+      reference: "FAC-2026-0134",
+      amountMad: 39_800,
+      issueDate: daysAgo(95),
+      dueDate: daysAgo(35),
+      status: "EN_RETARD",
+    },
+  });
+  await prisma.callTask.create({
+    data: {
+      invoiceId: rifAgroInvoice.id,
+      reason: "Recouvrement standard (31-60j), aucun appel tenté — un contact direct est plus efficace à ce stade.",
+      talkingPoints:
+        "1. Rappeler la facture FAC-2026-0134 (39 800 MAD) et les 20 jours de retard à ce moment-là.\n2. Demander un engagement de paiement avec une date précise.",
+      status: "FAIT",
+      outcome: "PROMESSE_PAIEMENT",
+      outcomeNote: "Engagement verbal à régler le 5 du mois suivant.",
+      createdAt: daysAgo(15),
+      completedAt: daysAgo(15),
+    },
+  });
+  await prisma.promiseToPay.create({
+    data: {
+      invoiceId: rifAgroInvoice.id,
+      amountMad: 39_800,
+      promisedDate: daysAgo(8),
+      status: "ROMPUE",
+      source: "APPEL",
+      createdAt: daysAgo(15),
+      resolvedAt: daysAgo(2),
+    },
+  });
+
+  console.log("Jeu de données synthétique créé : 11 clients, 11 factures, 3 promesses de paiement.");
 }
 
 main()

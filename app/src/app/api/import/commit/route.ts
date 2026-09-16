@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSettings } from "@/lib/settings";
 
 type ImportRow = {
   clientName: string;
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Aucune ligne à importer" }, { status: 400 });
   }
 
+  const settings = await getSettings();
   let clientsCreated = 0;
   let invoicesCreated = 0;
   let invoicesSkipped = 0;
@@ -70,7 +72,7 @@ export async function POST(req: Request) {
         amountMad: Math.round(row.amountMad),
         issueDate: new Date(row.issueDate),
         dueDate,
-        status: dueDate.getTime() >= Date.now() ? "EN_COURS" : "EN_RETARD",
+        status: dueDate.getTime() >= settings.simulatedDate.getTime() ? "EN_COURS" : "EN_RETARD",
       },
     });
     invoicesCreated++;

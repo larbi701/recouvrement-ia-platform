@@ -31,6 +31,7 @@ export default async function DossiersPage({
           { label: "Centre d'action", href: "/cockpit" },
           { label: "Dossiers par priorité" },
         ]}
+        simulatedDate={settings.simulatedDate}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <TabbedDossierList

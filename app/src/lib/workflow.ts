@@ -37,6 +37,7 @@ export type NextAction =
   | { kind: "WAIT_HUMAN"; playbook: PlaybookKey } // réponse client non résolue -> Dispute Specialist / humain
   | { kind: "WAIT_PROMISE"; playbook: PlaybookKey; promisedDate: string } // promesse de paiement en cours, pas encore échue
   | { kind: "LEGAL_TRANSFER"; playbook: "LEGAL_TRANSFER" } // >= 120 jours, transmission avocat obligatoire
+  | { kind: "PUBLIC_DEBTOR_REVIEW"; playbook: PlaybookKey; reason: string; requiresValidation: true } // organisme public : jamais de playbook automatique
   | { kind: "CALL_TASK"; playbook: PlaybookKey; reason: string; requiresValidation: boolean }
   | { kind: "EMAIL"; playbook: PlaybookKey; tone: Tone; reason: string; requiresValidation: boolean }
   | { kind: "WHATSAPP"; playbook: PlaybookKey; tone: Tone; reason: string; requiresValidation: boolean };
@@ -52,6 +53,7 @@ export type WorkflowInput = {
   lastCallOutcome: string | null; // dernier résultat d'appel connu (ex: NE_REPOND_PAS)
   strategic: boolean;
   chronicLatePayer: boolean;
+  isPublicDebtor: boolean; // organisme public : règles de paiement distinctes, jamais de relance automatique
   activePromise: { promisedDate: string; overdue: boolean } | null; // promesse EN_COURS la plus récente
   thresholds: PlaybookThresholds;
 };
@@ -85,6 +87,7 @@ export function computeNextAction(input: WorkflowInput): NextAction {
     lastCallOutcome,
     strategic,
     chronicLatePayer,
+    isPublicDebtor,
     activePromise,
     thresholds,
   } = input;
@@ -92,6 +95,17 @@ export function computeNextAction(input: WorkflowInput): NextAction {
   const playbook = computePlaybook(daysOverdue, thresholds);
   const reminderCount = emailCount + whatsappCount;
   const sensitiveByDefault = strategic || amountMad > thresholds.hitlAmountThreshold;
+
+  // Organisme public : règles de paiement propres à la commande publique, jamais traité par
+  // les playbooks automatiques — signalé et transmis à un humain systématiquement.
+  if (isPublicDebtor) {
+    return {
+      kind: "PUBLIC_DEBTOR_REVIEW",
+      playbook,
+      reason: "Débiteur public : délais et voies de recouvrement spécifiques (commande publique) — pas de relance automatique, revue humaine systématique.",
+      requiresValidation: true,
+    };
+  }
 
   // §11 : litige en attente -> toujours un humain, quel que soit le playbook.
   if (hasUnresolvedReply) return { kind: "WAIT_HUMAN", playbook };

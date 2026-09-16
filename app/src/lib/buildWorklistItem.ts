@@ -9,10 +9,13 @@ type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
 
 export function buildWorklistItem(
   invoice: InvoiceWithRelations,
-  thresholds: PlaybookThresholds = DEFAULT_THRESHOLDS
+  thresholds: PlaybookThresholds & { simulatedDate?: Date } = DEFAULT_THRESHOLDS
 ): WorklistItem {
+  // Horloge de démo (§ simulatedDate) — jamais l'heure réelle : sinon "+7 jours" côté UI ne
+  // changerait rien aux statuts affichés.
+  const now = (thresholds.simulatedDate ?? new Date()).getTime();
   // Signé : négatif = jours restants avant échéance (PRE_DUE), positif = jours de retard.
-  const daysOverdue = Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000);
+  const daysOverdue = Math.floor((now - invoice.dueDate.getTime()) / 86_400_000);
   const emailCount = invoice.reminders.filter((r) => r.channel === "EMAIL").length;
   const whatsappCount = invoice.reminders.filter((r) => r.channel === "WHATSAPP").length;
   const hasUnresolvedReply = invoice.replies.length > 0;
@@ -54,7 +57,7 @@ export function buildWorklistItem(
   const activePromise = activePromiseRecord
     ? {
         promisedDate: activePromiseRecord.promisedDate.toISOString(),
-        overdue: activePromiseRecord.promisedDate.getTime() < Date.now(),
+        overdue: activePromiseRecord.promisedDate.getTime() < now,
       }
     : null;
 
@@ -74,6 +77,7 @@ export function buildWorklistItem(
     lastCallOutcome,
     strategic: invoice.client.strategic,
     chronicLatePayer: invoice.client.chronicLatePayer,
+    isPublicDebtor: invoice.client.isPublicDebtor,
     activePromise,
     thresholds,
   });
@@ -93,6 +97,7 @@ export function buildWorklistItem(
     behaviorNote: invoice.client.behaviorNote,
     strategic: invoice.client.strategic,
     chronicLatePayer: invoice.client.chronicLatePayer,
+    isPublicDebtor: invoice.client.isPublicDebtor,
     reminders: invoice.reminders
       .slice()
       .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime())

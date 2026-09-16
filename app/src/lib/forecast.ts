@@ -27,13 +27,13 @@ export type ForecastResult = {
   contributions: ForecastContribution[];
 };
 
-export function computeCashForecast(items: WorklistItem[]): ForecastResult {
+export function computeCashForecast(items: WorklistItem[], simulatedDate: Date): ForecastResult {
   const contributions: ForecastContribution[] = items.map((item) => {
     const activePromise = item.promises.find((p) => p.status === "EN_COURS");
     if (activePromise) {
       const days = Math.max(
         0,
-        Math.ceil((new Date(activePromise.promisedDate).getTime() - Date.now()) / 86_400_000)
+        Math.ceil((new Date(activePromise.promisedDate).getTime() - simulatedDate.getTime()) / 86_400_000)
       );
       return {
         invoiceId: item.invoiceId,

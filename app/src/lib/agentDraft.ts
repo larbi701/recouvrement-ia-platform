@@ -1,16 +1,23 @@
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { suggestedTone, type Tone } from "@/lib/scoring";
+import { checkGeneratedContent, type GuardrailResult } from "@/lib/contentGuardrails";
+import type { PlatformSettings } from "@/lib/settings";
 import type { Prisma } from "@prisma/client";
 
 type InvoiceForDraft = Prisma.InvoiceGetPayload<{ include: { client: true; reminders: true } }>;
 
+const CHANNEL_MAX_LENGTH: Record<"EMAIL" | "WHATSAPP", number> = { EMAIL: 2500, WHATSAPP: 700 };
+
 // Logique de rédaction de Yas, partagée entre l'action manuelle (un dossier)
-// et le pilotage automatique (plusieurs dossiers d'affilée).
+// et le pilotage automatique (plusieurs dossiers d'affilée). Le nom de l'entreprise
+// créancière vient des Paramètres (settings.companyName) — jamais en dur dans le prompt,
+// pour rester cohérent avec la marque affichée dans le reste de l'application.
 export async function generateReminderDraft(
   invoice: InvoiceForDraft,
-  channel: "EMAIL" | "WHATSAPP"
-): Promise<{ draft: string; tone: Tone; daysOverdue: number }> {
-  const daysOverdue = Math.max(0, Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000));
+  channel: "EMAIL" | "WHATSAPP",
+  settings: PlatformSettings
+): Promise<{ draft: string; tone: Tone; daysOverdue: number; guardrail: GuardrailResult }> {
+  const daysOverdue = Math.max(0, Math.floor((settings.simulatedDate.getTime() - invoice.dueDate.getTime()) / 86_400_000));
   const tone = suggestedTone(invoice.reminders.length);
   const toneInstruction =
     tone === "AMICALE"
@@ -27,11 +34,11 @@ export async function generateReminderDraft(
   const formatRules =
     channel === "WHATSAPP"
       ? `- Format WhatsApp : message court (40 à 70 mots), sans "Objet :", sans formule d'ouverture/fermeture façon lettre — direct, comme un message professionnel qu'on tape sur son téléphone. Une ou deux phrases courtes maximum par paragraphe. Pas d'emoji.
-- Termine par une signature courte sur sa propre ligne : "Meridian Distribution".`
+- Termine par une signature courte sur sa propre ligne : "${settings.companyName}".`
       : `- Format email : commence par "Objet : ...", corps structuré en paragraphes courts, 130 à 180 mots.
-- Termine par une signature générique : "Le service recouvrement — Meridian Distribution" (pas de prénom inventé).`;
+- Termine par une signature générique : "Le service recouvrement — ${settings.companyName}" (pas de prénom inventé).`;
 
-  const prompt = `Tu es l'agent de recouvrement amiable de "Meridian Distribution", une PME marocaine (B2B). Rédige UNE relance en français, professionnelle et humaine, jamais agressive, au format ${channel === "WHATSAPP" ? "WhatsApp" : "email"}.
+  const prompt = `Tu es l'agent de recouvrement amiable de "${settings.companyName}", une PME marocaine (B2B, secteur : ${settings.companySector}). Rédige UNE relance en français, professionnelle et humaine, jamais agressive, au format ${channel === "WHATSAPP" ? "WhatsApp" : "email"}.
 
 Contexte :
 - Client : ${invoice.client.name} (contact : ${invoice.client.contactName})
@@ -61,5 +68,11 @@ Réponds uniquement avec le message, en texte brut. Pas de commentaire, pas de b
     .join("\n")
     .trim();
 
-  return { draft, tone, daysOverdue };
+  const guardrail = checkGeneratedContent(draft, {
+    invoiceReference: invoice.reference,
+    amountMad: invoice.amountMad,
+    maxLength: CHANNEL_MAX_LENGTH[channel],
+  });
+
+  return { draft, tone, daysOverdue, guardrail };
 }

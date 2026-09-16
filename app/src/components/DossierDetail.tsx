@@ -27,14 +27,15 @@ const OUTCOME_LABELS: Record<string, string> = {
   AUTRE: "Autre",
 };
 
-type GenerateResponse = { draft: string; tone: string; channel: string };
+type GenerateResponse = { draft: string; tone: string; channel: string; guardrail: { ok: boolean; violations: string[] } };
 
-export function DossierDetail({ item }: { item: WorklistItem }) {
+export function DossierDetail({ item, now }: { item: WorklistItem; now: string }) {
   const router = useRouter();
   const [validated, setValidated] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
   const [draftTone, setDraftTone] = useState<string | null>(null);
   const [draftChannel, setDraftChannel] = useState<string | null>(null);
+  const [draftViolations, setDraftViolations] = useState<string[]>([]);
   const [loadingGenerate, setLoadingGenerate] = useState(false);
   const [loadingSend, setLoadingSend] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
       setDraft(data.draft);
       setDraftTone(data.tone);
       setDraftChannel(data.channel);
+      setDraftViolations(data.guardrail.ok ? [] : data.guardrail.violations);
     } catch {
       setConfirmation("Erreur — vérifie que ta clé API Claude est bien renseignée dans .env.local");
     } finally {
@@ -107,6 +109,7 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
       setDraft(null);
       setDraftTone(null);
       setDraftChannel(null);
+      setDraftViolations([]);
       router.refresh();
     } catch {
       setConfirmation("Erreur lors de l'envoi.");
@@ -186,6 +189,11 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
           <div className="mb-1 flex items-center gap-2">
             <h2 className="text-lg font-bold text-indigo-deep">{item.clientName}</h2>
             {item.strategic && <span className="text-violet-velos">★</span>}
+            {item.isPublicDebtor && (
+              <span className="rounded-full bg-lavande-struct px-2 py-0.5 text-[11px] font-medium text-indigo-deep">
+                Débiteur public
+              </span>
+            )}
           </div>
           <p className="text-sm text-graphite/60">
             {item.sector} · {item.contactName} · {item.contactEmail} · {item.contactPhone}
@@ -267,6 +275,13 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
                 Plafond légal marocain de 120 jours dépassé (loi 69-21) — ce dossier sort du recouvrement amiable.
                 Transmission avocat recommandée, validation obligatoire (hors périmètre d&apos;exécution de cette
                 démo).
+              </div>
+            )}
+
+            {item.nextAction.kind === "PUBLIC_DEBTOR_REVIEW" && (
+              <div className="rounded-lg border border-lavande-struct bg-perle p-3 text-sm text-graphite">
+                <span className="font-medium text-indigo-deep">Débiteur public — </span>
+                {item.nextAction.reason}
               </div>
             )}
 
@@ -352,6 +367,16 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
                   {CHANNEL_LABELS[draftChannel ?? ""] ?? draftChannel} · Ton :{" "}
                   {TONE_LABELS[draftTone ?? ""] ?? draftTone} — modifiable avant envoi
                 </span>
+                {draftViolations.length > 0 && (
+                  <div className="rounded-lg border border-corail/40 bg-corail/10 p-2.5 text-xs text-indigo-deep">
+                    <p className="font-medium">Garde-fou : à vérifier avant envoi</p>
+                    <ul className="mt-1 list-disc pl-4">
+                      {draftViolations.map((v) => (
+                        <li key={v}>{v}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <p className="text-xs text-graphite/50">
                   {draftChannel === "WHATSAPP"
                     ? "Envoyer ouvre WhatsApp avec ce message déjà écrit dedans."
@@ -398,7 +423,7 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
           Ce que Yas a fait sur ce dossier
         </h3>
         <p className="mb-2 text-xs text-graphite/50">Journal chronologique, du plus récent au plus ancien.</p>
-        <ActivityFeed events={caseActivity} linkToDossiers={false} />
+        <ActivityFeed events={caseActivity} linkToDossiers={false} now={new Date(now)} />
       </div>
     </div>
   );

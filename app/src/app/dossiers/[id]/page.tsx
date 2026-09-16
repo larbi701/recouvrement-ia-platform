@@ -31,9 +31,10 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
           { label: "Dossiers par priorité", href: "/dossiers" },
           { label: item.clientName },
         ]}
+        simulatedDate={settings.simulatedDate}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
-        <DossierDetail item={item} />
+        <DossierDetail item={item} now={settings.simulatedDate.toISOString()} />
       </main>
     </div>
   );

@@ -11,7 +11,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Paramètres" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Paramètres" }]} simulatedDate={settings.simulatedDate} />
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-6">
         <h1 className="mb-1 text-xl font-bold text-indigo-deep">Paramètres</h1>
         <p className="mb-6 text-sm text-graphite/60">

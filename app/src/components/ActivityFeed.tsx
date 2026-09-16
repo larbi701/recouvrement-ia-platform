@@ -2,8 +2,8 @@ import type { ActivityItem } from "@/lib/activity";
 import { SPECIALIST_LABELS } from "@/lib/agents";
 import Link from "next/link";
 
-function relativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
+function relativeTime(iso: string, nowMs: number): string {
+  const diffMs = nowMs - new Date(iso).getTime();
   const days = Math.floor(diffMs / 86_400_000);
   if (days <= 0) return "aujourd'hui";
   if (days === 1) return "hier";
@@ -12,7 +12,16 @@ function relativeTime(iso: string): string {
   return `il y a ${months} mois`;
 }
 
-export function ActivityFeed({ events, linkToDossiers = true }: { events: ActivityItem[]; linkToDossiers?: boolean }) {
+export function ActivityFeed({
+  events,
+  linkToDossiers = true,
+  now,
+}: {
+  events: ActivityItem[];
+  linkToDossiers?: boolean;
+  now: Date;
+}) {
+  const nowMs = now.getTime();
   if (events.length === 0) {
     return <p className="text-sm text-graphite/50">Aucune activité pour l&apos;instant.</p>;
   }
@@ -31,7 +40,7 @@ export function ActivityFeed({ events, linkToDossiers = true }: { events: Activi
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="truncate text-sm font-medium text-indigo-deep">{event.title}</p>
-                <span className="shrink-0 text-[11px] text-graphite/40">{relativeTime(event.at)}</span>
+                <span className="shrink-0 text-[11px] text-graphite/40">{relativeTime(event.at, nowMs)}</span>
               </div>
               <p className="text-xs text-graphite/60">
                 <span

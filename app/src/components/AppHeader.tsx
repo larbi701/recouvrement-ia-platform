@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LogoWordmark } from "@/components/Logo";
+import { ClockControl } from "@/components/ClockControl";
 
 // Ordre du plus général (vue globale du portefeuille) au plus particulier (le système
 // lui-même) — suit la séquence réelle du workflow (§9 des specs) : on alimente d'abord
@@ -17,18 +18,25 @@ const NAV_LINKS = [
   { href: "/settings", label: "Paramètres", numbering: "10" },
 ];
 
-export function AppHeader({ breadcrumb }: { breadcrumb?: { label: string; href?: string }[] }) {
+export function AppHeader({
+  breadcrumb,
+  simulatedDate,
+}: {
+  breadcrumb?: { label: string; href?: string }[];
+  simulatedDate?: Date;
+}) {
   const showNav = Boolean(breadcrumb);
 
   return (
     <header className="border-b border-lavande-struct bg-white">
-      <div className="mx-auto flex max-w-6xl items-center px-6 py-5">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-6 py-5">
         <Link href="/cockpit">
           <LogoWordmark />
         </Link>
-        <span className="ml-3 rounded-full bg-lavande-struct px-2 py-0.5 text-xs font-medium text-indigo-deep">
+        <span className="rounded-full bg-lavande-struct px-2 py-0.5 text-xs font-medium text-indigo-deep">
           Démo — données simulées
         </span>
+        {simulatedDate && <ClockControl simulatedDate={simulatedDate.toISOString()} />}
       </div>
 
       {showNav && (
