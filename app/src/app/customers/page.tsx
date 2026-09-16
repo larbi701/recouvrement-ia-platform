@@ -32,7 +32,7 @@ export default async function CustomersPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Customer 360" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Vue client 360" }]} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <ul className="flex flex-col gap-2">
           {rows.map(({ client, invoiceCount, totalOutstanding, avgHealth, needsAttention }) => (

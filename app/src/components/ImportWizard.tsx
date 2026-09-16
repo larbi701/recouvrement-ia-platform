@@ -194,7 +194,7 @@ export function ImportWizard() {
   if (step === "done" && result) {
     return (
       <div className="rounded-xl border border-violet-velos/30 bg-lavande/20 p-6 text-center">
-        <p className="text-lg font-bold text-indigo-deep">Import terminé ✓</p>
+        <p className="text-lg font-bold text-indigo-deep">Import terminé</p>
         <p className="mt-2 text-sm text-graphite/70">
           {result.clientsCreated} nouveau(x) client(s) · {result.invoicesCreated} facture(s) créée(s)
           {result.invoicesSkipped > 0 && ` · ${result.invoicesSkipped} déjà existante(s), ignorée(s)`}
@@ -203,7 +203,7 @@ export function ImportWizard() {
           href="/cockpit"
           className="mt-4 inline-block rounded-lg bg-indigo-deep px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
         >
-          Voir l&apos;Action Center →
+          Voir le Centre d&apos;action →
         </a>
       </div>
     );

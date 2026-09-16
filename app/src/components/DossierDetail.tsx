@@ -101,8 +101,8 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
       if (!res.ok) throw new Error("Échec de l'envoi");
       setConfirmation(
         draftChannel === "WHATSAPP"
-          ? "WhatsApp ouvert avec le message prêt — envoie-le depuis l'onglet qui vient de s'ouvrir. Traçabilité enregistrée ✓"
-          : "Ta messagerie s'est ouverte avec l'email prêt — il ne reste qu'à cliquer envoyer. Traçabilité enregistrée ✓"
+          ? "WhatsApp ouvert avec le message prêt — envoie-le depuis l'onglet qui vient de s'ouvrir. Traçabilité enregistrée."
+          : "Ta messagerie s'est ouverte avec l'email prêt — il ne reste qu'à cliquer envoyer. Traçabilité enregistrée."
       );
       setDraft(null);
       setDraftTone(null);
@@ -191,7 +191,7 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
             {item.sector} · {item.contactName} · {item.contactEmail} · {item.contactPhone}
           </p>
           <a href={`/customers/${item.clientId}`} className="text-xs text-azur hover:underline">
-            Voir la fiche client complète (Customer 360) →
+            Voir la vue client 360 complète →
           </a>
           <div className="mt-4 rounded-lg bg-perle p-3 text-sm text-graphite">{item.behaviorNote}</div>
 
@@ -290,7 +290,7 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
                     href={buildTelUrl(item.contactPhone)}
                     className="mt-3 inline-block rounded-lg bg-indigo-deep px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
                   >
-                    📞 Appeler {item.contactPhone} maintenant
+                    Appeler {item.contactPhone} maintenant
                   </a>
                 </div>
                 <div className="flex flex-col gap-2 rounded-lg border border-lavande-struct p-3">

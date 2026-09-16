@@ -30,22 +30,22 @@ export default async function ActionCenter() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Action Center" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Centre d'action" }]} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <div className="mb-2 flex items-center justify-between">
           <p className="text-sm text-graphite/60">
             Que dois-je faire aujourd&apos;hui ?{" "}
             <Link href="/dashboard" className="text-azur hover:underline">
-              Executive Dashboard →
+              Tableau de bord →
             </Link>{" "}
             ·{" "}
             <Link href="/forecast" className="text-azur hover:underline">
-              Cash Forecast →
+              Prévisions de trésorerie →
             </Link>{" "}
             ·{" "}
             <Link href="/agents" className="text-azur hover:underline">
-              Agent Hub →
+              Agents IA →
             </Link>
           </p>
         </div>
@@ -57,7 +57,7 @@ export default async function ActionCenter() {
         </div>
 
         <div className="mt-8">
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">Work Queues</h2>
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">Files de travail</h2>
           <p className="mb-3 text-xs text-graphite/50">
             Le même portefeuille, vu sous plusieurs angles — clique une file pour l&apos;ouvrir.
           </p>

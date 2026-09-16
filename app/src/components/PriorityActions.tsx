@@ -7,10 +7,10 @@ const ACTION_LABELS: Record<string, string> = {
   CALL_TASK: "Passer un appel",
 };
 
-const ACTION_ICONS: Record<string, string> = {
-  EMAIL: "✉️",
-  WHATSAPP: "💬",
-  CALL_TASK: "📞",
+const ACTION_DOT: Record<string, string> = {
+  EMAIL: "bg-azur",
+  WHATSAPP: "bg-violet-velos",
+  CALL_TASK: "bg-corail",
 };
 
 // §12.02 Action Center : jamais un tableau analytique — une to-do list dictée par l'IA.
@@ -54,7 +54,7 @@ export function PriorityActions({ items, limit = 5 }: { items: WorklistItem[]; l
                 className="flex items-center justify-between gap-3 rounded-lg border border-lavande-struct bg-white p-3 transition hover:border-violet-velos/40"
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">{ACTION_ICONS[kind]}</span>
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${ACTION_DOT[kind]}`} aria-hidden />
                   <div>
                     <p className="text-sm font-medium text-indigo-deep">
                       {item.clientName} — {ACTION_LABELS[kind]}

@@ -45,7 +45,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Customer 360", href: "/customers" }, { label: client.name }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Vue client 360", href: "/customers" }, { label: client.name }]} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <div className="rounded-xl border border-lavande-struct bg-white p-5">
           <div className="flex items-center gap-2">

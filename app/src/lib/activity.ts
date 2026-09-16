@@ -12,7 +12,6 @@ export type SpecialistKey =
 export type ActivityItem = {
   id: string;
   at: string; // ISO
-  icon: string;
   actor: "AGENT" | "HUMAIN";
   agent: SpecialistKey | null; // quel spécialiste, si actor === AGENT
   title: string;
@@ -51,7 +50,6 @@ export function buildActivityFeed(items: WorklistItem[], limit = 8): ActivityIte
       events.push({
         id: `reminder-${r.id}`,
         at: r.sentAt,
-        icon: r.channel === "WHATSAPP" ? "💬" : "✉️",
         actor: r.createdBy === "HUMAIN" ? "HUMAIN" : "AGENT",
         agent: r.createdBy === "HUMAIN" ? null : "COMMUNICATION_SPECIALIST",
         title: `Relance ${CHANNEL_LABELS[r.channel] ?? r.channel} envoyée — ${item.clientName}`,
@@ -64,7 +62,6 @@ export function buildActivityFeed(items: WorklistItem[], limit = 8): ActivityIte
       events.push({
         id: `call-created-${c.id}`,
         at: c.createdAt,
-        icon: "📞",
         actor: "AGENT",
         agent: "COLLECTION_STRATEGIST",
         title: `Fiche d'appel préparée — ${item.clientName}`,
@@ -76,7 +73,6 @@ export function buildActivityFeed(items: WorklistItem[], limit = 8): ActivityIte
         events.push({
           id: `call-done-${c.id}`,
           at: c.completedAt,
-          icon: "✅",
           actor: "HUMAIN",
           agent: null,
           title: `Appel enregistré — ${item.clientName}`,
@@ -91,7 +87,6 @@ export function buildActivityFeed(items: WorklistItem[], limit = 8): ActivityIte
       events.push({
         id: `reply-${rep.id}`,
         at: rep.receivedAt,
-        icon: "🧭",
         actor: "AGENT",
         agent: promiseFlavored ? "PROMISE_MANAGER" : "DISPUTE_SPECIALIST",
         title: `Réponse client analysée — ${item.clientName}`,
@@ -105,7 +100,6 @@ export function buildActivityFeed(items: WorklistItem[], limit = 8): ActivityIte
         events.push({
           id: `promise-${p.id}`,
           at: p.resolvedAt ?? p.createdAt,
-          icon: p.status === "TENUE" ? "✅" : "⚠️",
           actor: "AGENT",
           agent: "PROMISE_MANAGER",
           title: `Promesse de paiement ${p.status === "TENUE" ? "tenue" : "rompue"} — ${item.clientName}`,

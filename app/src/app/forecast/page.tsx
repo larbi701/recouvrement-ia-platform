@@ -22,11 +22,11 @@ export default async function CashForecastPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Cash Forecast" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Prévisions de trésorerie" }]} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <Link href="/cockpit" className="text-sm text-azur hover:underline">
-          ← Action Center
+          ← Centre d&apos;action
         </Link>
 
         <div className="mt-4 rounded-xl border border-lavande-struct bg-white p-5">

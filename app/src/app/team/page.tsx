@@ -56,7 +56,7 @@ export default async function TeamPerformancePage() {
       <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Performance équipe" }]} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <p className="mb-4 text-sm text-graphite/60">
-          Le pendant humain de l&apos;Agent Hub — ce que l&apos;équipe a traité elle-même. Vue agrégée pour ce POC,
+          Le pendant humain des Agents IA — ce que l&apos;équipe a traité elle-même. Vue agrégée pour ce POC,
           pas encore de suivi nominatif par collaborateur.
         </p>
 

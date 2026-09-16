@@ -22,7 +22,12 @@ export function ActivityFeed({ events, linkToDossiers = true }: { events: Activi
       {events.map((event, i) => {
         const content = (
           <div className="flex gap-3 py-2.5">
-            <span className="text-lg leading-none">{event.icon}</span>
+            <span
+              className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
+                event.actor === "AGENT" ? "bg-violet-velos" : "bg-azur"
+              }`}
+              aria-hidden
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="truncate text-sm font-medium text-indigo-deep">{event.title}</p>

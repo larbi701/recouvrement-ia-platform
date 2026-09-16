@@ -28,8 +28,8 @@ export default async function DossiersPage({
       <AppHeader
         breadcrumb={[
           { label: "Yas", href: "/" },
-          { label: "Action Center", href: "/cockpit" },
-          { label: "Work Queues" },
+          { label: "Centre d'action", href: "/cockpit" },
+          { label: "Files de travail" },
         ]}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">

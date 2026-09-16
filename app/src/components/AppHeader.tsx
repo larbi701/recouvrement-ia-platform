@@ -6,13 +6,13 @@ import { LogoWordmark } from "@/components/Logo";
 // la plateforme, on regarde l'ensemble, puis on affine progressivement le niveau de zoom.
 const NAV_LINKS = [
   { href: "/import", label: "Importer", numbering: null },
-  { href: "/dashboard", label: "Executive Dashboard", numbering: "01" },
-  { href: "/cockpit", label: "Action Center", numbering: "02" },
-  { href: "/dossiers", label: "Work Queues", numbering: "03" },
+  { href: "/dashboard", label: "Tableau de bord", numbering: "01" },
+  { href: "/cockpit", label: "Centre d'action", numbering: "02" },
+  { href: "/dossiers", label: "Files de travail", numbering: "03" },
   { href: "/portfolio", label: "Portefeuille", numbering: "04" },
-  { href: "/customers", label: "Customer 360", numbering: "05" },
-  { href: "/forecast", label: "Cash Forecast", numbering: "08" },
-  { href: "/agents", label: "Agent Hub", numbering: "07" },
+  { href: "/customers", label: "Vue client 360", numbering: "05" },
+  { href: "/forecast", label: "Prévisions de trésorerie", numbering: "08" },
+  { href: "/agents", label: "Agents IA", numbering: "07" },
   { href: "/team", label: "Performance équipe", numbering: "09" },
   { href: "/settings", label: "Paramètres", numbering: "10" },
 ];

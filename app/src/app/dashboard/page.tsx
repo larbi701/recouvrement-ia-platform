@@ -42,16 +42,16 @@ export default async function ExecutiveDashboard() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Executive Dashboard" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Tableau de bord" }]} />
       <KpiHeader totalOverdueMad={totalOverdueMad} dossierCount={items.length} />
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <div className="mb-6 flex gap-3 text-sm">
           <Link href="/cockpit" className="text-azur hover:underline">
-            ← Action Center
+            ← Centre d&apos;action
           </Link>
           <Link href="/forecast" className="text-azur hover:underline">
-            Cash Forecast →
+            Prévisions de trésorerie →
           </Link>
         </div>
 

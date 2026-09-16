@@ -38,7 +38,7 @@ export default async function AgentHubPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Agent Hub" }]} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Agents IA" }]} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
         <p className="mb-4 text-sm text-graphite/60">
           Yas est le visage unique que vous voyez au quotidien — en coulisses, 7 agents spécialisés collaborent via
@@ -50,7 +50,9 @@ export default async function AgentHubPage() {
             return (
               <div key={agent.key} className="rounded-xl border border-lavande-struct bg-white p-4">
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl">{agent.icon}</span>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-deep to-violet-velos text-xs font-bold text-white">
+                    {agent.initials}
+                  </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-lavande px-2 py-0.5 text-[11px] font-medium text-indigo-deep">
                     <span className="h-1.5 w-1.5 rounded-full bg-violet-velos" />
                     Actif
