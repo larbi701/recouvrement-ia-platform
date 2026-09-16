@@ -433,6 +433,19 @@ L'utilisateur a fourni un document de cadrage complet ("AI Collections Platform"
 
 **Checklist §18 du cahier des charges — 13/15 couverts** : Import Excel ❌, Analyse IA ✅, Work Queues ✅, Priorisation IA ✅, Customer 360 ❌, Collection Case ✅, Emails ✅, WhatsApp ✅, Promesses ✅, Cash Forecasting ✅, Human In The Loop ✅, Agent Hub ✅, Dashboard exécutif ✅, Traçabilité ✅, Architecture multi-agents ✅.
 
+## 30. Import Excel/CSV + Customer 360 (2026-09-16)
+
+Les deux derniers items de la checklist §18, construits dans la foulée.
+
+**Import** (`src/lib/importParsing.ts`, `ImportWizard.tsx`, `/import`, `POST /api/import/commit`) :
+- Parsing côté navigateur pour l'aperçu instantané ("Analyse instantanée", §17). Mapping de colonnes auto-deviné par mots-clés (français/anglais), éditable via menus déroulants avant import, avec validation ligne par ligne (lignes en erreur affichées mais ignorées, pas d'échec global).
+- **Bug trouvé et corrigé pendant le développement** : la librairie `xlsx` interprète les dates ambiguës d'un CSV en anglais (mm/jj/aaaa) — "01/06/2026" devenait le 6 janvier au lieu du 1er juin, même sans l'option `cellDates`. Corrigé en écrivant un parseur CSV maison (gère guillemets, virgules dans les champs, détection auto du séparateur `,` vs `;`) utilisé pour les `.csv` ; `xlsx` reste utilisé uniquement pour les vrais binaires `.xlsx`/`.xls`, où les dates sont des numéros de série Excel non ambigus. **Vérifié par un script de test isolé** (pas juste supposé corrigé) avant de committer.
+- `POST /api/import/commit` : retrouve un client existant par nom exact ou en crée un nouveau (avec des valeurs par défaut raisonnables — `behaviorNote` signale explicitement "importé, historique non disponible"), crée les factures, idempotent sur (client, référence) pour permettre un ré-import sans doublons.
+
+**Customer 360** (`/customers`, `/customers/[id]`) : liste agrégée par client (montant en cours, Customer Health Score moyen, badge "Attention requise") et fiche complète (toutes les factures du client, historique fusionné toutes factures confondues, scores moyens). Lien ajouté depuis la Collection Case ("Voir la fiche client complète →").
+
+**Checklist §18 — 15/15 désormais couverts.** Écrans encore non construits (hors checklist stricte, priorité basse) : 04 Portfolio (grille complète type Growfin — les Work Queues en tiennent lieu partiellement), 09 Team Performance, 10 Administration (le seuil `HITL_AMOUNT_THRESHOLD_MAD` reste en dur dans le code, pas encore configurable via UI).
+
 ## 27. "Complètement nul" — retour très négatif après test réel, refonte (2026-09-15)
 
 L'utilisateur a testé la version avec l'entonnoir (cartes) et l'action réelle (mailto/wa.me) et l'a jugée "complètement nulle" — signal qu'un patch de plus ne suffirait pas. Clarifié par questions ciblées :
