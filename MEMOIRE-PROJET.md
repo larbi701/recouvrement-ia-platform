@@ -1,6 +1,6 @@
 # Plateforme IA de Recouvrement — Mémoire projet
 
-> Dernière mise à jour : 2026-09-15
+> Dernière mise à jour : 2026-09-16
 > Ce fichier est la mémoire de référence du projet. On le met à jour à chaque décision importante.
 
 ## 1. Vision
@@ -488,3 +488,40 @@ Face à un nouveau retour négatif, l'utilisateur a explicitement demandé qu'on
 ### Incident technique découvert et corrigé pendant cette session
 
 Le script PowerShell de renommage en masse (Yasmine→Yas, tour précédent) a silencieusement **corrompu `src/app/dossiers/[id]/page.tsx`** : une erreur `Get-Content -Raw` sur un fichier a laissé la variable `$content` de l'itération précédente (celle du Cockpit) dans la boucle, qui a alors été écrite par erreur dans le fichier de la page détail — remplaçant le rendu du dossier par une copie du Cockpit. Resté invisible jusqu'à ce qu'on teste spécifiquement l'ouverture d'un dossier après le renommage. **Corrigé** en récrivant le fichier correctement. Leçon retenue : après un script de remplacement en masse via boucle PowerShell, vérifier qu'aucune erreur silencieuse n'a permis une réutilisation de variable entre fichiers — un `grep` de contenu croisé (comme celui fait ici avec "Pilotage automatique") est un bon filet de sécurité rapide.
+
+## 31. Paramètres, Portefeuille, Performance équipe + guide de navigation — checklist 15/15 vraiment complète (2026-09-16)
+
+Suite logique du §30 : les 3 derniers écrans de la spec manquaient (04 Portfolio, 09 Team Performance, 10 Administration). Demande utilisateur : "rajoute les 3 écrans qui manquent et trouve-leur un nom français clair et autoporteur", puis en cours de route : "sur la page d'accueil, explique la logique des différents onglets et leur articulation".
+
+**Noms retenus** : **Portefeuille** (04), **Performance équipe** (09), **Paramètres** (10).
+
+### a) Paramètres — rendu réellement fonctionnel, pas juste un formulaire décoratif
+
+Point de vigilance explicite de l'utilisateur tout au long du projet : ne jamais construire un écran qui a l'air de faire quelque chose sans réellement changer le comportement du moteur. Donc :
+
+- **Nouveau modèle `Settings`** (Prisma, ligne singleton `id: "singleton"`) : `hitlAmountThreshold`, `earlyMaxDays`, `standardMaxDays`, `intensiveMaxDays`, `preLegalMaxDays`.
+- **`src/lib/settings.ts`** : `getSettings()` avec upsert-on-read (crée la ligne par défaut si absente : 100 000 MAD / 30 / 60 / 90 / 120 jours).
+- **Refactor de fond dans `workflow.ts` et `scoring.ts`** : les anciennes constantes en dur `HITL_AMOUNT_THRESHOLD_MAD` et `LEGAL_CEILING_DAYS` ont été supprimées et remplacées par un objet `PlaybookThresholds` (défaut `DEFAULT_THRESHOLDS`) passé en paramètre à `computePlaybook`, `computeNextAction`, `computeRiskScore`, `computeExtendedScores`. `buildWorklistItem(invoice, thresholds)` fait circuler cet objet vers tout le pipeline de scoring. Toutes les pages qui appellent `buildWorklistItem` chargent désormais `getSettings()` en parallèle (`Promise.all`) de la requête Prisma.
+- **`POST /api/settings/update`** : valide (nombres positifs, jours strictement croissants precoce < standard < intensif < pré-contentieux) puis upsert.
+- **`SettingsForm.tsx`** (client) : formulaire numérique simple, `router.refresh()` après sauvegarde.
+- **Testé en direct** : seuil de validation abaissé de 100 000 à 10 000 MAD via le formulaire → immédiatement après, Atlas Négoce (18 000 MAD) passe de "pas de validation" à **"Validation requise"** sur `/dossiers` et `/cockpit`. Confirme que le réglage agit réellement sur tout le moteur de décision, partout, sans redémarrage. Remis à 100 000 (valeur par défaut) après le test, via `POST /api/settings/update`.
+
+**Régression introduite puis corrigée dans le même tour** : `WorkQueues.tsx` importait encore l'ancienne constante `HITL_AMOUNT_THRESHOLD_MAD` supprimée pendant ce refactor (utilisée pour la file "High Value") — cassait la compilation de `/dossiers` et `/cockpit`. Corrigé en transformant `WORK_QUEUES` (tableau statique) en `getWorkQueues(hitlAmountThreshold)` (fonction), et en propageant `settings.hitlAmountThreshold` en prop jusqu'à `WorkQueueGrid` et `TabbedDossierList`. Un `grep` sur tout `src/` après coup a confirmé qu'aucune autre référence aux constantes supprimées ne subsistait.
+
+### b) Portefeuille (`/portfolio`, `PortfolioTable.tsx`)
+
+Grille exhaustive de toutes les factures, triable par colonne (client, montant, retard, score) et filtrable par recherche texte (client ou référence) — en complément des Work Queues (qui, elles, segmentent par situation). Répond au besoin "chercher un dossier précis" ou "vue d'ensemble triable" à la Growfin.
+
+### c) Performance équipe (`/team`)
+
+Pendant humain de l'Agent Hub : KPIs agrégés sur ce que l'**équipe** (pas Yas) a traité — actions humaines réalisées, appels traités, fiabilité des promesses obtenues (% tenues vs rompues), montant sécurisé, montant en attente de validation humaine, répartition des résultats d'appel. Explicitement noté dans l'UI : vue agrégée pour ce POC, pas de suivi nominatif par collaborateur (pas de notion de compte utilisateur dans ce POC).
+
+### d) Guide de navigation sur la page d'accueil (`page.tsx`, section "Comment se repérer dans l'application")
+
+Liste des 10 écrans (Importer → Executive Dashboard 01 → Action Center 02 → Work Queues 03 → Portefeuille 04 → Customer 360 05 → Cash Forecast 08 → Agent Hub 07 → Performance équipe 09 → Paramètres 10), chacun avec icône, tag de positionnement ("point de départ", "vue la plus large", "le cœur de l'appli"...), description courte, et une ligne explicite d'articulation vers l'écran suivant (ex. "Se met à jour dès qu'une promesse ou un paiement change de statut" pour Cash Forecast). Répond directement à la demande "qu'on comprenne l'articulation entre onglets / complémentarités".
+
+### e) Navigation réordonnée
+
+`AppHeader.tsx` : ordre du plus général (vue globale du portefeuille) au plus particulier (le système lui-même), suivant la séquence réelle du workflow — Importer → Dashboard → Action Center → Work Queues → Portefeuille → Customer 360 → Cash Forecast → Agent Hub → Performance équipe → Paramètres.
+
+**Checklist §18 — désormais réellement 15/15**, plus les 3 écrans complémentaires (04/09/10) qui n'étaient pas dans la checklist stricte mais faisaient partie des 10 écrans numérotés de la spec. Tous les 10 écrans numérotés (01 à 10, sans 06 qui n'a jamais été spécifié comme un écran distinct) + Importer sont construits et fonctionnels.
