@@ -396,6 +396,43 @@ Retour direct : contrairement aux agents NAIOM (qui produisent un livrable concr
 
 **Reste un écart avec le modèle NAIOM** (plan proposé → validation → livrable produit) : notre flux est "génère → modifie → ouvre le vrai canal", en une étape, pas un plan explicite validé avant exécution. Pas corrigé pour l'instant — à évaluer si l'utilisateur le demande explicitement, ce serait un changement de UX plus lourd (étape de plan visible avant génération).
 
+## 29. Refonte majeure — PROJECT_CHARTER_AND_FUNCTIONAL_SPECIFICATIONS.md (2026-09-16)
+
+L'utilisateur a fourni un document de cadrage complet ("AI Collections Platform") après avoir explicitement demandé un travail de spec avant de continuer à coder. C'est le document de référence désormais — **toute décision produit doit s'y référer en premier**, avant d'improviser. Fichier reçu dans la conversation, pas encore committé dans le repo en tant que tel (à demander à l'utilisateur de fournir le .md si on veut le committer).
+
+### Ce qui a été reconstruit pour s'aligner
+
+**Moteur métier** (`src/lib/workflow.ts`, réécrit) :
+- **6 playbooks officiels par ancienneté** (§10) : PRE_DUE (avant échéance, rappel préventif) → EARLY (0-30j) → STANDARD (31-60j) → INTENSIVE (61-90j, appel + escalade commerciale) → PRE_LEGAL (91-120j, validation obligatoire) → LEGAL_TRANSFER (120j+, transmission avocat). `daysOverdue` n'est plus clampé à 0 — il peut être négatif pour représenter une facture pas encore échue.
+- **Règles Human-in-the-loop explicites** (§11), Niveau d'autonomie 2 "Semi-Autonome" retenu pour le MVP (§8) : chaque action porte un flag `requiresValidation` — vrai si montant > 100 000 MAD (`HITL_AMOUNT_THRESHOLD_MAD`, configurable à terme), client stratégique, ou playbook ≥ INTENSIVE. Les actions standard (early/standard, montant normal) s'exécutent **sans** validation — testé en direct sur le pilotage automatique, qui ne traite plus que les dossiers non sensibles.
+- **Promise to Pay** : nouveau modèle Prisma dédié (`PromiseToPay` : amountMad, promisedDate, status EN_COURS/TENUE/ROMPUE, source APPEL/REPONSE/MANUEL). Créé automatiquement quand un appel se conclut par une promesse de paiement. Une promesse en cours et non échue met le dossier en pause (`WAIT_PROMISE`) ; une promesse échue et non tenue déclenche un appel de relance.
+
+**Scores** (`src/lib/scoring.ts`, étendu) — les 6 scores du §14, formules déterministes (pas de ML, comme demandé) : Collection Score (score existant, sert à la priorité), Risk Score, Payment Probability Score, Promise Reliability Score (basé sur l'historique tenue/rompue), Customer Health Score, Cash Impact Score.
+
+**7 agents nommés** (`src/lib/agents.ts`, nouveau) : Portfolio Intelligence Analyst, Collection Strategist, Communication Specialist, Promise To Pay Manager, Dispute Specialist, Cash Forecast Analyst, Collection Supervisor — exactement la liste du §7. "Yas" reste le visage unique sur les écrans du quotidien (décision produit : garder ce qui marchait plutôt que de tout réinventer), mais chaque action porte maintenant un badge d'attribution au bon spécialiste (§3 des specs techniques, "badge explicatif"), visible dans le fil d'activité et sur la Collection Case.
+
+**Écrans reconstruits/ajoutés** (§12), tous vérifiés en direct sans erreur serveur :
+- **`/` Présentation** — inchangée (vitrine de vente).
+- **`/cockpit` = Action Center (§02)** — reconstruite comme une to-do list ("Voici les N actions prioritaires pour sécuriser X MAD aujourd'hui", `PriorityActions.tsx`), plus le pilotage automatique et les Work Queues. Le KPI dashboard analytique en a été retiré (déplacé).
+- **`/dashboard` = Executive Dashboard (§01)**, nouvelle page — KPI + répartition du portefeuille par playbook + scores moyens.
+- **`/dossiers` = Work Queues (§03)**, recalibré sur les vraies catégories du spec : Urgent Cases, High Value, Promises Due, Strategic Accounts, Disputes, Pending Validation (`WorkQueues.tsx`, remplace l'ancien `Funnel.tsx` supprimé). Un dossier peut apparaître dans plusieurs files (pas de catégories exclusives).
+- **`/dossiers/[id]` = Collection Case (§06)** — `ClassificationCard.tsx` enrichie : détail des 4 critères du Collection Score + les 5 scores complémentaires + playbook affiché + attribution par spécialiste + gate de validation conditionné à `requiresValidation` (plus systématique comme avant).
+- **`/forecast` = Cash Forecast (§08)**, nouvelle page — projections J+7/30/60/90, formule déterministe (`src/lib/forecast.ts`) : promesses de paiement en priorité, sinon horizon typique par playbook pondéré par Payment Probability Score.
+- **`/agents` = Agent Hub (§07)**, nouvelle page — les 7 agents avec rôle, responsabilité, et un compteur d'activité en direct par agent.
+- **Non construits pour l'instant** : 04 Portfolio (grille complète), 05 Customer 360, 09 Team Performance, 10 Administration. Pas dans ce lot — à faire dans une prochaine passe.
+
+**Scénario démo enrichi** (`prisma/seed.ts`) : 7ème client "Rabat Textile Export" ajouté pour incarner le playbook PRE_DUE (facture pas encore échue) ; une promesse de paiement ajoutée sur Cosmétiques du Sud pour peupler "Promises Due".
+
+### Reste à faire pour coller pleinement au cahier des charges
+
+1. **Import Excel/CSV de balance âgée** (§1 des specs techniques, première étape du scénario "effet wow" du §17) — **pas encore construit**, c'est le morceau le plus significatif qui manque. Nécessite un parseur (ex. lib `xlsx`), un mapping de colonnes auto/guidé, et un écran d'import.
+2. **Customer 360** (§05) — vue agrégée par client (toutes ses factures, historique complet) — pas construite, actuellement tout est raisonné à l'échelle d'une facture.
+3. **Portfolio** (§04) — grille complète type Growfin, triable/filtrable — pas construite (les Work Queues en tiennent lieu partiellement).
+4. **Team Performance** (§09) et **Administration** (§10) — non construits, priorité basse pour un POC.
+5. Le seuil `HITL_AMOUNT_THRESHOLD_MAD` est en dur dans le code — l'Administration (§10) devrait le rendre configurable par l'utilisateur.
+
+**Checklist §18 du cahier des charges — 13/15 couverts** : Import Excel ❌, Analyse IA ✅, Work Queues ✅, Priorisation IA ✅, Customer 360 ❌, Collection Case ✅, Emails ✅, WhatsApp ✅, Promesses ✅, Cash Forecasting ✅, Human In The Loop ✅, Agent Hub ✅, Dashboard exécutif ✅, Traçabilité ✅, Architecture multi-agents ✅.
+
 ## 27. "Complètement nul" — retour très négatif après test réel, refonte (2026-09-15)
 
 L'utilisateur a testé la version avec l'entonnoir (cartes) et l'action réelle (mailto/wa.me) et l'a jugée "complètement nulle" — signal qu'un patch de plus ne suffirait pas. Clarifié par questions ciblées :
