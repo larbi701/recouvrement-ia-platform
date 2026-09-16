@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { buildActivityFeed } from "@/lib/activity";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AppHeader } from "@/components/AppHeader";
@@ -20,16 +21,19 @@ const PRIORITY_STYLES: Record<string, string> = {
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const client = await prisma.client.findUnique({
-    where: { id },
-    include: {
-      invoices: { include: { client: true, reminders: true, replies: true, callTasks: true, promises: true } },
-    },
-  });
+  const [client, settings] = await Promise.all([
+    prisma.client.findUnique({
+      where: { id },
+      include: {
+        invoices: { include: { client: true, reminders: true, replies: true, callTasks: true, promises: true } },
+      },
+    }),
+    getSettings(),
+  ]);
 
   if (!client) notFound();
 
-  const items = client.invoices.map(buildWorklistItem).sort((a, b) => b.score - a.score);
+  const items = client.invoices.map((invoice) => buildWorklistItem(invoice, settings)).sort((a, b) => b.score - a.score);
   const totalOutstanding = items.reduce((sum, i) => sum + i.amountMad, 0);
   const avgHealth =
     items.length > 0 ? Math.round(items.reduce((s, i) => s + i.scores.customerHealthScore, 0) / items.length) : 100;

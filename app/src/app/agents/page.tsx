@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { buildActivityFeed } from "@/lib/activity";
 import { AppHeader } from "@/components/AppHeader";
 import { AGENT_ROSTER } from "@/lib/agents";
@@ -9,10 +10,13 @@ export const dynamic = "force-dynamic";
 // §12.07 Agent Hub — vue temps réel des agents IA, la preuve visuelle du "Digital Workforce"
 // (§3 des specs) : chaque agent a un rôle, une responsabilité, et une activité mesurable.
 export default async function AgentHubPage() {
-  const invoices = await prisma.invoice.findMany({
-    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
-  });
-  const items = invoices.map(buildWorklistItem);
+  const [invoices, settings] = await Promise.all([
+    prisma.invoice.findMany({
+      include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
+    }),
+    getSettings(),
+  ]);
+  const items = invoices.map((invoice) => buildWorklistItem(invoice, settings));
   const activity = buildActivityFeed(items, 500);
 
   const pendingValidationCount = items.filter(

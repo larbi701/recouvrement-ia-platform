@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { AppHeader } from "@/components/AppHeader";
 import { KpiHeader } from "@/components/KpiHeader";
 import { PLAYBOOK_LABELS, type PlaybookKey } from "@/lib/workflow";
@@ -12,11 +13,14 @@ const PLAYBOOK_ORDER: PlaybookKey[] = ["PRE_DUE", "EARLY", "STANDARD", "INTENSIV
 // §12.01 Executive Dashboard — "Comment se porte mon cash ?" Vision globale pour CEO/DAF,
 // séparée de l'Action Center (qui reste une to-do list, pas un écran analytique).
 export default async function ExecutiveDashboard() {
-  const invoices = await prisma.invoice.findMany({
-    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
-    orderBy: { dueDate: "asc" },
-  });
-  const items = invoices.map(buildWorklistItem);
+  const [invoices, settings] = await Promise.all([
+    prisma.invoice.findMany({
+      include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
+      orderBy: { dueDate: "asc" },
+    }),
+    getSettings(),
+  ]);
+  const items = invoices.map((invoice) => buildWorklistItem(invoice, settings));
   const totalOverdueMad = items.reduce((sum, i) => sum + i.amountMad, 0);
 
   const byPlaybook = PLAYBOOK_ORDER.map((key) => {

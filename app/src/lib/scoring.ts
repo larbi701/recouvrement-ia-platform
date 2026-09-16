@@ -23,17 +23,18 @@ export type ScoringResult = {
 };
 
 const AMOUNT_CAP_MAD = 150_000;
-// Plafond calé sur la réalité marocaine : délai moyen PME 2024 = 88 jours (Inforisk),
-// plafond légal entre partenaires commerciaux = 120 jours (loi 69-21).
-const DAYS_CAP = 120;
-const LEGAL_CEILING_DAYS = 120;
 const REMINDERS_CAP = 4;
+// Plafond par défaut calé sur la réalité marocaine : plafond légal entre partenaires
+// commerciaux = 120 jours (loi 69-21). Réglable depuis Paramètres (§10) —
+// `legalCeilingDays` prévaut quand fourni par l'appelant (buildWorklistItem le lit
+// depuis la table Settings).
+const DEFAULT_LEGAL_CEILING_DAYS = 120;
 
-export function computeRiskScore(input: ScoringInput): ScoringResult {
+export function computeRiskScore(input: ScoringInput, legalCeilingDays = DEFAULT_LEGAL_CEILING_DAYS): ScoringResult {
   const { amountMad, reminderCount, hasUnresolvedReply } = input;
   const daysOverdue = Math.max(0, input.daysOverdue); // une facture pas encore échue (PRE_DUE) n'ajoute aucun point ici
 
-  const overdueScore = Math.min(daysOverdue / DAYS_CAP, 1) * 40;
+  const overdueScore = Math.min(daysOverdue / legalCeilingDays, 1) * 40;
   const amountScore = Math.min(amountMad / AMOUNT_CAP_MAD, 1) * 30;
   const reminderScore = Math.min(reminderCount / REMINDERS_CAP, 1) * 20;
   const silenceBonus = reminderCount >= 2 && !hasUnresolvedReply ? 10 : 0;
@@ -50,12 +51,13 @@ export function computeRiskScore(input: ScoringInput): ScoringResult {
     reminderCount,
     hasUnresolvedReply,
     priority,
+    legalCeilingDays,
   });
 
   const breakdown: ScoreCriterion[] = [
     {
       label: "Ancienneté du retard",
-      value: `${daysOverdue} jour(s) sur ${DAYS_CAP} (plafond légal marocain)`,
+      value: `${daysOverdue} jour(s) sur ${legalCeilingDays} (plafond légal marocain)`,
       points: Math.round(overdueScore),
       maxPoints: 40,
     },
@@ -91,8 +93,9 @@ function buildReasoning(args: {
   reminderCount: number;
   hasUnresolvedReply: boolean;
   priority: ScoringResult["priority"];
+  legalCeilingDays: number;
 }): string {
-  const { daysOverdue, amountMad, reminderCount, hasUnresolvedReply, priority } = args;
+  const { daysOverdue, amountMad, reminderCount, hasUnresolvedReply, priority, legalCeilingDays } = args;
   const amountLabel = `${amountMad.toLocaleString("fr-FR")} MAD`;
 
   if (daysOverdue < 0) {
@@ -100,10 +103,10 @@ function buildReasoning(args: {
   }
 
   const legalNote =
-    daysOverdue >= LEGAL_CEILING_DAYS
-      ? ` — dépasse le plafond légal marocain de ${LEGAL_CEILING_DAYS} jours (loi 69-21)`
-      : daysOverdue >= LEGAL_CEILING_DAYS - 15
-      ? ` — approche le plafond légal marocain de ${LEGAL_CEILING_DAYS} jours (loi 69-21)`
+    daysOverdue >= legalCeilingDays
+      ? ` — dépasse le plafond légal marocain de ${legalCeilingDays} jours (loi 69-21)`
+      : daysOverdue >= legalCeilingDays - 15
+      ? ` — approche le plafond légal marocain de ${legalCeilingDays} jours (loi 69-21)`
       : "";
 
   if (hasUnresolvedReply) {
@@ -149,13 +152,16 @@ export type ExtendedScoringInput = {
 
 const CASH_IMPACT_CAP_MAD = 250_000;
 
-export function computeExtendedScores(input: ExtendedScoringInput): ExtendedScores {
+export function computeExtendedScores(
+  input: ExtendedScoringInput,
+  legalCeilingDays = DEFAULT_LEGAL_CEILING_DAYS
+): ExtendedScores {
   const days = Math.max(0, input.daysOverdue);
 
   const riskScore = Math.min(
     100,
     Math.round(
-      Math.min(days / LEGAL_CEILING_DAYS, 1) * 50 +
+      Math.min(days / legalCeilingDays, 1) * 50 +
         (input.chronicLatePayer ? 20 : 0) +
         (input.hasUnresolvedReply ? 15 : 0) +
         Math.min(input.amountMad / AMOUNT_CAP_MAD, 1) * 15

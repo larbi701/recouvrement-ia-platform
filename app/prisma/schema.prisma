@@ -75,6 +75,18 @@ model CallTask {
   completedAt    DateTime?
 }
 
+// §10 Administration — un seul enregistrement (id fixe "singleton"). Les seuils et délais
+// que le moteur de décision (src/lib/workflow.ts) lit réellement, pas un affichage figé.
+model Settings {
+  id                  String   @id @default("singleton")
+  hitlAmountThreshold Int      @default(100000) // MAD — au-delà, validation humaine obligatoire
+  earlyMaxDays        Int      @default(30) // fin du playbook EARLY
+  standardMaxDays     Int      @default(60) // fin du playbook STANDARD
+  intensiveMaxDays    Int      @default(90) // fin du playbook INTENSIVE
+  preLegalMaxDays     Int      @default(120) // fin du playbook PRE_LEGAL = plafond légal (loi 69-21)
+  updatedAt           DateTime @updatedAt
+}
+
 model ClientReply {
   id               String   @id @default(cuid())
   invoice          Invoice  @relation(fields: [invoiceId], references: [id])

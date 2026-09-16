@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { AppHeader } from "@/components/AppHeader";
 import { DossierDetail } from "@/components/DossierDetail";
 
@@ -9,22 +10,25 @@ export const dynamic = "force-dynamic";
 export default async function DossierPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const invoice = await prisma.invoice.findUnique({
-    where: { id },
-    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
-  });
+  const [invoice, settings] = await Promise.all([
+    prisma.invoice.findUnique({
+      where: { id },
+      include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
+    }),
+    getSettings(),
+  ]);
 
   if (!invoice) notFound();
 
-  const item = buildWorklistItem(invoice);
+  const item = buildWorklistItem(invoice, settings);
 
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader
         breadcrumb={[
           { label: "Yas", href: "/" },
-          { label: "Cockpit", href: "/cockpit" },
-          { label: "Dossiers", href: "/dossiers" },
+          { label: "Action Center", href: "/cockpit" },
+          { label: "Work Queues", href: "/dossiers" },
           { label: item.clientName },
         ]}
       />

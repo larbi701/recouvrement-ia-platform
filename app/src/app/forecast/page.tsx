@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { AppHeader } from "@/components/AppHeader";
 import { computeCashForecast } from "@/lib/forecast";
 
@@ -9,10 +10,13 @@ export const dynamic = "force-dynamic";
 // §12.08 Cash Forecast — Inspiré HighRadius. Prévisions J+7/J+30/J+60/J+90, basées sur
 // les promesses de paiement en cours et une estimation déterministe pour le reste.
 export default async function CashForecastPage() {
-  const invoices = await prisma.invoice.findMany({
-    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
-  });
-  const items = invoices.map(buildWorklistItem);
+  const [invoices, settings] = await Promise.all([
+    prisma.invoice.findMany({
+      include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
+    }),
+    getSettings(),
+  ]);
+  const items = invoices.map((invoice) => buildWorklistItem(invoice, settings));
   const { horizons, contributions } = computeCashForecast(items);
   const maxMad = Math.max(...horizons.map((h) => h.cumulativeMad), 1);
 

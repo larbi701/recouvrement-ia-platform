@@ -2,20 +2,29 @@
 
 import { useState } from "react";
 import type { WorklistItem } from "@/lib/types";
-import { WORK_QUEUES, type QueueKey } from "@/components/WorkQueues";
+import { getWorkQueues, type QueueKey } from "@/components/WorkQueues";
 import { DossierCards } from "@/components/DossierCards";
 
 type TabKey = QueueKey | "tous";
 
-export function TabbedDossierList({ items, initialQueue }: { items: WorklistItem[]; initialQueue: QueueKey | null }) {
+export function TabbedDossierList({
+  items,
+  initialQueue,
+  hitlAmountThreshold,
+}: {
+  items: WorklistItem[];
+  initialQueue: QueueKey | null;
+  hitlAmountThreshold: number;
+}) {
   const [activeTab, setActiveTab] = useState<TabKey>(initialQueue ?? "tous");
+  const workQueues = getWorkQueues(hitlAmountThreshold);
 
   const tabs: { key: TabKey; label: string; count: number }[] = [
     { key: "tous", label: "Tous les dossiers", count: items.length },
-    ...WORK_QUEUES.map((q) => ({ key: q.key, label: q.label, count: items.filter(q.match).length })),
+    ...workQueues.map((q) => ({ key: q.key, label: q.label, count: items.filter(q.match).length })),
   ];
 
-  const activeQueue = WORK_QUEUES.find((q) => q.key === activeTab);
+  const activeQueue = workQueues.find((q) => q.key === activeTab);
   const filtered = activeQueue ? items.filter(activeQueue.match) : items;
 
   return (

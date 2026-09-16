@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { AppHeader } from "@/components/AppHeader";
 import { TabbedDossierList } from "@/components/TabbedDossierList";
 import type { QueueKey } from "@/components/WorkQueues";
@@ -13,11 +14,14 @@ export default async function DossiersPage({
 }) {
   const { queue } = await searchParams;
 
-  const invoices = await prisma.invoice.findMany({
-    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
-    orderBy: { dueDate: "asc" },
-  });
-  const items = invoices.map(buildWorklistItem).sort((a, b) => b.score - a.score);
+  const [invoices, settings] = await Promise.all([
+    prisma.invoice.findMany({
+      include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
+      orderBy: { dueDate: "asc" },
+    }),
+    getSettings(),
+  ]);
+  const items = invoices.map((invoice) => buildWorklistItem(invoice, settings)).sort((a, b) => b.score - a.score);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -29,7 +33,11 @@ export default async function DossiersPage({
         ]}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
-        <TabbedDossierList items={items} initialQueue={(queue as QueueKey) ?? null} />
+        <TabbedDossierList
+          items={items}
+          initialQueue={(queue as QueueKey) ?? null}
+          hitlAmountThreshold={settings.hitlAmountThreshold}
+        />
       </main>
     </div>
   );

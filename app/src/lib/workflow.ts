@@ -15,10 +15,23 @@ export const PLAYBOOK_LABELS: Record<PlaybookKey, string> = {
   LEGAL_TRANSFER: "Transmission avocat (120j+)",
 };
 
-// Seuil de validation humaine obligatoire, configurable par client à terme (§10 Administration).
-// Valeur par défaut retenue pour le POC.
-export const HITL_AMOUNT_THRESHOLD_MAD = 100_000;
-export const LEGAL_CEILING_DAYS = 120;
+// Seuils réglables depuis l'écran Paramètres (§10 Administration) — plus de constantes
+// figées : computeNextAction() et computePlaybook() reçoivent ces valeurs en entrée.
+export type PlaybookThresholds = {
+  hitlAmountThreshold: number;
+  earlyMaxDays: number;
+  standardMaxDays: number;
+  intensiveMaxDays: number;
+  preLegalMaxDays: number;
+};
+
+export const DEFAULT_THRESHOLDS: PlaybookThresholds = {
+  hitlAmountThreshold: 100_000,
+  earlyMaxDays: 30,
+  standardMaxDays: 60,
+  intensiveMaxDays: 90,
+  preLegalMaxDays: 120,
+};
 
 export type NextAction =
   | { kind: "WAIT_HUMAN"; playbook: PlaybookKey } // réponse client non résolue -> Dispute Specialist / humain
@@ -40,14 +53,15 @@ export type WorkflowInput = {
   strategic: boolean;
   chronicLatePayer: boolean;
   activePromise: { promisedDate: string; overdue: boolean } | null; // promesse EN_COURS la plus récente
+  thresholds: PlaybookThresholds;
 };
 
-export function computePlaybook(daysOverdue: number): PlaybookKey {
+export function computePlaybook(daysOverdue: number, thresholds: PlaybookThresholds = DEFAULT_THRESHOLDS): PlaybookKey {
   if (daysOverdue < 0) return "PRE_DUE";
-  if (daysOverdue <= 30) return "EARLY";
-  if (daysOverdue <= 60) return "STANDARD";
-  if (daysOverdue <= 90) return "INTENSIVE";
-  if (daysOverdue <= LEGAL_CEILING_DAYS) return "PRE_LEGAL";
+  if (daysOverdue <= thresholds.earlyMaxDays) return "EARLY";
+  if (daysOverdue <= thresholds.standardMaxDays) return "STANDARD";
+  if (daysOverdue <= thresholds.intensiveMaxDays) return "INTENSIVE";
+  if (daysOverdue <= thresholds.preLegalMaxDays) return "PRE_LEGAL";
   return "LEGAL_TRANSFER";
 }
 
@@ -72,11 +86,12 @@ export function computeNextAction(input: WorkflowInput): NextAction {
     strategic,
     chronicLatePayer,
     activePromise,
+    thresholds,
   } = input;
 
-  const playbook = computePlaybook(daysOverdue);
+  const playbook = computePlaybook(daysOverdue, thresholds);
   const reminderCount = emailCount + whatsappCount;
-  const sensitiveByDefault = strategic || amountMad > HITL_AMOUNT_THRESHOLD_MAD;
+  const sensitiveByDefault = strategic || amountMad > thresholds.hitlAmountThreshold;
 
   // §11 : litige en attente -> toujours un humain, quel que soit le playbook.
   if (hasUnresolvedReply) return { kind: "WAIT_HUMAN", playbook };

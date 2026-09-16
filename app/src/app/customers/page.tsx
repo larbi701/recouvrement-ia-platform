@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { AppHeader } from "@/components/AppHeader";
 
 export const dynamic = "force-dynamic";
@@ -8,15 +9,18 @@ export const dynamic = "force-dynamic";
 // §12.05 Customer 360 — liste. Le portefeuille vu par client plutôt que par facture :
 // utile dès qu'un client a plusieurs factures (après un import notamment).
 export default async function CustomersPage() {
-  const clients = await prisma.client.findMany({
-    include: {
-      invoices: { include: { client: true, reminders: true, replies: true, callTasks: true, promises: true } },
-    },
-    orderBy: { name: "asc" },
-  });
+  const [clients, settings] = await Promise.all([
+    prisma.client.findMany({
+      include: {
+        invoices: { include: { client: true, reminders: true, replies: true, callTasks: true, promises: true } },
+      },
+      orderBy: { name: "asc" },
+    }),
+    getSettings(),
+  ]);
 
   const rows = clients.map((client) => {
-    const items = client.invoices.map(buildWorklistItem);
+    const items = client.invoices.map((invoice) => buildWorklistItem(invoice, settings));
     const totalOutstanding = items.reduce((sum, i) => sum + i.amountMad, 0);
     const avgHealth =
       items.length > 0 ? Math.round(items.reduce((s, i) => s + i.scores.customerHealthScore, 0) / items.length) : 100;

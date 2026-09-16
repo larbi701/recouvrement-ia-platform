@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
+import { getSettings } from "@/lib/settings";
 import { buildActivityFeed } from "@/lib/activity";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AppHeader } from "@/components/AppHeader";
@@ -14,11 +15,14 @@ export const dynamic = "force-dynamic";
 // l'application, volontairement une to-do list et pas un tableau de bord analytique
 // (celui-là est sur l'Executive Dashboard, §12.01).
 export default async function ActionCenter() {
-  const invoices = await prisma.invoice.findMany({
-    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
-    orderBy: { dueDate: "asc" },
-  });
-  const items = invoices.map(buildWorklistItem).sort((a, b) => b.score - a.score);
+  const [invoices, settings] = await Promise.all([
+    prisma.invoice.findMany({
+      include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
+      orderBy: { dueDate: "asc" },
+    }),
+    getSettings(),
+  ]);
+  const items = invoices.map((invoice) => buildWorklistItem(invoice, settings)).sort((a, b) => b.score - a.score);
   const activity = buildActivityFeed(items, 8);
   const pendingCount = items.filter(
     (i) => i.nextAction.kind === "EMAIL" || i.nextAction.kind === "WHATSAPP"
@@ -57,7 +61,7 @@ export default async function ActionCenter() {
           <p className="mb-3 text-xs text-graphite/50">
             Le même portefeuille, vu sous plusieurs angles — clique une file pour l&apos;ouvrir.
           </p>
-          <WorkQueueGrid items={items} />
+          <WorkQueueGrid items={items} hitlAmountThreshold={settings.hitlAmountThreshold} />
         </div>
 
         <div className="mt-8 rounded-xl border border-lavande-struct bg-white p-5">
