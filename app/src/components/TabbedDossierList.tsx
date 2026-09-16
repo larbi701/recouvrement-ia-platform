@@ -2,21 +2,21 @@
 
 import { useState } from "react";
 import type { WorklistItem } from "@/lib/types";
-import { STAGES, type StageKey } from "@/components/Funnel";
+import { WORK_QUEUES, type QueueKey } from "@/components/WorkQueues";
 import { DossierCards } from "@/components/DossierCards";
 
-type TabKey = StageKey | "tous";
+type TabKey = QueueKey | "tous";
 
-export function TabbedDossierList({ items, initialStage }: { items: WorklistItem[]; initialStage: StageKey | null }) {
-  const [activeTab, setActiveTab] = useState<TabKey>(initialStage ?? "tous");
+export function TabbedDossierList({ items, initialQueue }: { items: WorklistItem[]; initialQueue: QueueKey | null }) {
+  const [activeTab, setActiveTab] = useState<TabKey>(initialQueue ?? "tous");
 
   const tabs: { key: TabKey; label: string; count: number }[] = [
     { key: "tous", label: "Tous les dossiers", count: items.length },
-    ...STAGES.map((s) => ({ key: s.key, label: s.label, count: items.filter(s.match).length })),
+    ...WORK_QUEUES.map((q) => ({ key: q.key, label: q.label, count: items.filter(q.match).length })),
   ];
 
-  const activeStage = STAGES.find((s) => s.key === activeTab);
-  const filtered = activeStage ? items.filter(activeStage.match) : items;
+  const activeQueue = WORK_QUEUES.find((q) => q.key === activeTab);
+  const filtered = activeQueue ? items.filter(activeQueue.match) : items;
 
   return (
     <div>
@@ -36,7 +36,7 @@ export function TabbedDossierList({ items, initialStage }: { items: WorklistItem
         ))}
       </div>
 
-      {activeStage && <p className="mb-4 text-sm text-graphite/60">{activeStage.description}</p>}
+      {activeQueue && <p className="mb-4 text-sm text-graphite/60">{activeQueue.description}</p>}
 
       <DossierCards items={filtered} />
     </div>

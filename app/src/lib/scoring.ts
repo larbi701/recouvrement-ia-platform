@@ -30,7 +30,8 @@ const LEGAL_CEILING_DAYS = 120;
 const REMINDERS_CAP = 4;
 
 export function computeRiskScore(input: ScoringInput): ScoringResult {
-  const { daysOverdue, amountMad, reminderCount, hasUnresolvedReply } = input;
+  const { amountMad, reminderCount, hasUnresolvedReply } = input;
+  const daysOverdue = Math.max(0, input.daysOverdue); // une facture pas encore échue (PRE_DUE) n'ajoute aucun point ici
 
   const overdueScore = Math.min(daysOverdue / DAYS_CAP, 1) * 40;
   const amountScore = Math.min(amountMad / AMOUNT_CAP_MAD, 1) * 30;
@@ -43,7 +44,13 @@ export function computeRiskScore(input: ScoringInput): ScoringResult {
   const priority: ScoringResult["priority"] =
     score >= 60 ? "URGENT" : score >= 35 ? "A_TRAITER" : "SURVEILLANCE";
 
-  const reasoning = buildReasoning({ daysOverdue, amountMad, reminderCount, hasUnresolvedReply, priority });
+  const reasoning = buildReasoning({
+    daysOverdue: input.daysOverdue, // valeur signée d'origine, pour un phrasé correct si pas encore échue
+    amountMad,
+    reminderCount,
+    hasUnresolvedReply,
+    priority,
+  });
 
   const breakdown: ScoreCriterion[] = [
     {
@@ -88,6 +95,10 @@ function buildReasoning(args: {
   const { daysOverdue, amountMad, reminderCount, hasUnresolvedReply, priority } = args;
   const amountLabel = `${amountMad.toLocaleString("fr-FR")} MAD`;
 
+  if (daysOverdue < 0) {
+    return `Facture pas encore échue (échéance dans ${Math.abs(daysOverdue)} jour(s)) sur ${amountLabel} — rappel préventif.`;
+  }
+
   const legalNote =
     daysOverdue >= LEGAL_CEILING_DAYS
       ? ` — dépasse le plafond légal marocain de ${LEGAL_CEILING_DAYS} jours (loi 69-21)`
@@ -113,4 +124,71 @@ export function suggestedTone(reminderCount: number): Tone {
   if (reminderCount <= 1) return "AMICALE";
   if (reminderCount <= 3) return "FERME";
   return "MISE_EN_DEMEURE";
+}
+
+// Scores complémentaires (§14 des specs) — formules déterministes basées sur l'ancienneté
+// et l'historique, sans modèle de machine learning, comme demandé pour le MVP.
+export type ExtendedScores = {
+  riskScore: number; // risque global de non-recouvrement
+  paymentProbabilityScore: number; // probabilité d'encaissement
+  promiseReliabilityScore: number; // fiabilité des promesses de paiement de ce client
+  customerHealthScore: number; // santé relationnelle du client
+  cashImpactScore: number; // impact potentiel sur la trésorerie
+};
+
+export type ExtendedScoringInput = {
+  daysOverdue: number;
+  amountMad: number;
+  chronicLatePayer: boolean;
+  strategic: boolean;
+  hasUnresolvedReply: boolean;
+  disputeCount: number; // contestations passées de ce client, tous dossiers confondus
+  promisesTenues: number;
+  promisesRompues: number;
+};
+
+const CASH_IMPACT_CAP_MAD = 250_000;
+
+export function computeExtendedScores(input: ExtendedScoringInput): ExtendedScores {
+  const days = Math.max(0, input.daysOverdue);
+
+  const riskScore = Math.min(
+    100,
+    Math.round(
+      Math.min(days / LEGAL_CEILING_DAYS, 1) * 50 +
+        (input.chronicLatePayer ? 20 : 0) +
+        (input.hasUnresolvedReply ? 15 : 0) +
+        Math.min(input.amountMad / AMOUNT_CAP_MAD, 1) * 15
+    )
+  );
+
+  const totalPromises = input.promisesTenues + input.promisesRompues;
+  const promiseReliabilityScore =
+    totalPromises > 0 ? Math.round((input.promisesTenues / totalPromises) * 100) : 70; // neutre, pas d'historique
+
+  const paymentProbabilityScore = Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(100 - riskScore * 0.8 + (input.strategic ? 8 : 0) + (promiseReliabilityScore - 70) * 0.2)
+    )
+  );
+
+  const customerHealthScore = Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(
+        100 -
+          (input.chronicLatePayer ? 25 : 0) -
+          input.disputeCount * 12 +
+          (input.strategic ? 10 : 0) +
+          (promiseReliabilityScore - 70) * 0.3
+      )
+    )
+  );
+
+  const cashImpactScore = Math.round(Math.min(input.amountMad / CASH_IMPACT_CAP_MAD, 1) * 100);
+
+  return { riskScore, paymentProbabilityScore, promiseReliabilityScore, customerHealthScore, cashImpactScore };
 }

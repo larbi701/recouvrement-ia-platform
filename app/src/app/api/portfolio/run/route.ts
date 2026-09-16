@@ -1,59 +1,38 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateReminderDraft } from "@/lib/agentDraft";
-import { computeNextAction } from "@/lib/workflow";
+import { buildWorklistItem } from "@/lib/buildWorklistItem";
 
-// Pilotage automatique : Yas traite d'affilée tous les dossiers qui ont une relance
-// email/WhatsApp due aujourd'hui, sans qu'un humain ait à ouvrir chaque dossier un par un.
-// Séquentiel et pas parallèle : chaque étape doit apparaître dans le fil d'activité dans
-// l'ordre où elle a été traitée, comme un vrai agent qui avance dossier après dossier.
+// Pilotage automatique : Yas traite d'affilée tous les dossiers dont la prochaine action
+// (email/WhatsApp) ne nécessite PAS de validation humaine (Niveau 2 — Semi-Autonome, §8).
+// Les dossiers sensibles (montant élevé, client stratégique, playbooks avancés) restent
+// dans les Work Queues pour validation individuelle — l'automatique ne les court-circuite pas.
 export async function POST() {
   const invoices = await prisma.invoice.findMany({
-    include: { client: true, reminders: true, replies: true, callTasks: true },
+    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
     orderBy: { dueDate: "asc" },
   });
 
   const toProcess = invoices.filter((invoice) => {
-    const daysOverdue = Math.max(0, Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000));
-    const emailCount = invoice.reminders.filter((r) => r.channel === "EMAIL").length;
-    const whatsappCount = invoice.reminders.filter((r) => r.channel === "WHATSAPP").length;
-    const nextAction = computeNextAction({
-      daysOverdue,
-      hasUnresolvedReply: invoice.replies.length > 0,
-      emailCount,
-      whatsappCount,
-      hasPendingCallTask: invoice.callTasks.some((c) => c.status === "A_FAIRE"),
-      hasAnyCallTask: invoice.callTasks.length > 0,
-      strategic: invoice.client.strategic,
-      chronicLatePayer: invoice.client.chronicLatePayer,
-    });
-    return nextAction.kind === "EMAIL" || nextAction.kind === "WHATSAPP";
+    const item = buildWorklistItem(invoice);
+    return (
+      (item.nextAction.kind === "EMAIL" || item.nextAction.kind === "WHATSAPP") &&
+      !item.nextAction.requiresValidation
+    );
   });
 
   const results: { clientName: string; channel: string; tone: string; snippet: string }[] = [];
 
   for (const invoice of toProcess) {
-    const daysOverdue = Math.max(0, Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000));
-    const emailCount = invoice.reminders.filter((r) => r.channel === "EMAIL").length;
-    const whatsappCount = invoice.reminders.filter((r) => r.channel === "WHATSAPP").length;
-    const nextAction = computeNextAction({
-      daysOverdue,
-      hasUnresolvedReply: invoice.replies.length > 0,
-      emailCount,
-      whatsappCount,
-      hasPendingCallTask: invoice.callTasks.some((c) => c.status === "A_FAIRE"),
-      hasAnyCallTask: invoice.callTasks.length > 0,
-      strategic: invoice.client.strategic,
-      chronicLatePayer: invoice.client.chronicLatePayer,
-    });
-    if (nextAction.kind !== "EMAIL" && nextAction.kind !== "WHATSAPP") continue;
+    const item = buildWorklistItem(invoice);
+    if (item.nextAction.kind !== "EMAIL" && item.nextAction.kind !== "WHATSAPP") continue;
 
-    const { draft, tone } = await generateReminderDraft(invoice, nextAction.kind);
+    const { draft, tone } = await generateReminderDraft(invoice, item.nextAction.kind);
 
     await prisma.reminder.create({
       data: {
         invoiceId: invoice.id,
-        channel: nextAction.kind,
+        channel: item.nextAction.kind,
         tone,
         content: draft,
         status: "ENVOYEE_SIMULEE",
@@ -63,7 +42,7 @@ export async function POST() {
 
     results.push({
       clientName: invoice.client.name,
-      channel: nextAction.kind,
+      channel: item.nextAction.kind,
       tone,
       snippet: draft.slice(0, 140),
     });

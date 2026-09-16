@@ -1,7 +1,17 @@
 import Link from "next/link";
 import { LogoWordmark } from "@/components/Logo";
 
+const NAV_LINKS = [
+  { href: "/cockpit", label: "Action Center" },
+  { href: "/dossiers", label: "Work Queues" },
+  { href: "/dashboard", label: "Executive Dashboard" },
+  { href: "/forecast", label: "Cash Forecast" },
+  { href: "/agents", label: "Agent Hub" },
+];
+
 export function AppHeader({ breadcrumb }: { breadcrumb?: { label: string; href?: string }[] }) {
+  const showNav = Boolean(breadcrumb);
+
   return (
     <header className="border-b border-lavande-struct bg-white">
       <div className="mx-auto flex max-w-6xl items-center px-6 py-5">
@@ -12,6 +22,17 @@ export function AppHeader({ breadcrumb }: { breadcrumb?: { label: string; href?:
           Démo — données simulées
         </span>
       </div>
+
+      {showNav && (
+        <div className="mx-auto flex max-w-6xl flex-wrap gap-x-4 gap-y-1 px-6 pb-3 text-xs font-medium">
+          {NAV_LINKS.map((link) => (
+            <Link key={link.href} href={link.href} className="text-graphite/60 hover:text-indigo-deep">
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {breadcrumb && breadcrumb.length > 0 && (
         <div className="mx-auto max-w-6xl px-6 pb-4 text-sm text-graphite/60">
           {breadcrumb.map((crumb, i) => (

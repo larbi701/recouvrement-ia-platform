@@ -51,6 +51,8 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
 
   const pendingCall = item.callTasks.find((c) => c.status === "A_FAIRE") ?? null;
   const caseActivity = buildActivityFeed([item], 20);
+  const requiresValidation = "requiresValidation" in item.nextAction && item.nextAction.requiresValidation;
+  const actionUnlocked = validated || !requiresValidation;
 
   async function handleGenerate(channel: "EMAIL" | "WHATSAPP") {
     setLoadingGenerate(true);
@@ -237,7 +239,7 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
 
         <ClassificationCard item={item} validated={validated} onValidate={() => setValidated(true)} />
 
-        {(validated || !["EMAIL", "WHATSAPP", "CALL_TASK"].includes(item.nextAction.kind)) && (
+        {(actionUnlocked || !["EMAIL", "WHATSAPP", "CALL_TASK"].includes(item.nextAction.kind)) && (
           <div className="rounded-xl border border-lavande-struct bg-white p-5">
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-graphite/60">Action</h3>
 
@@ -248,10 +250,20 @@ export function DossierDetail({ item }: { item: WorklistItem }) {
               </p>
             )}
 
-            {item.nextAction.kind === "LEGAL_ESCALATION" && (
+            {item.nextAction.kind === "WAIT_PROMISE" && (
+              <div className="rounded-lg border border-lavande-struct bg-perle p-3 text-sm text-graphite">
+                <span className="font-medium text-indigo-deep">Promise To Pay Manager — </span>
+                Promesse de paiement en cours, échéance le{" "}
+                {new Date(item.nextAction.promisedDate).toLocaleDateString("fr-FR")}. Aucune relance tant que ce
+                délai n&apos;est pas dépassé.
+              </div>
+            )}
+
+            {item.nextAction.kind === "LEGAL_TRANSFER" && (
               <div className="rounded-lg border border-corail/40 bg-corail/10 p-3 text-sm text-indigo-deep">
-                Plafond légal marocain de 120 jours dépassé (loi 69-21) — ce dossier sort du recouvrement amiable. À
-                transmettre au contentieux (hors périmètre de cette démo).
+                Plafond légal marocain de 120 jours dépassé (loi 69-21) — ce dossier sort du recouvrement amiable.
+                Transmission avocat recommandée, validation obligatoire (hors périmètre d&apos;exécution de cette
+                démo).
               </div>
             )}
 

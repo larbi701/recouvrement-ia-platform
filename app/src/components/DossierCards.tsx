@@ -18,7 +18,8 @@ const NEXT_ACTION_LABELS: Record<WorklistItem["nextAction"]["kind"], string> = {
   WHATSAPP: "→ Message WhatsApp à générer",
   CALL_TASK: "→ Appel humain à préparer/traiter",
   WAIT_HUMAN: "→ Réponse client à traiter",
-  LEGAL_ESCALATION: "→ Plafond légal dépassé",
+  WAIT_PROMISE: "→ En attente d'une promesse de paiement",
+  LEGAL_TRANSFER: "→ Transmission avocat (validation obligatoire)",
 };
 
 export function DossierCards({ items }: { items: WorklistItem[] }) {
@@ -55,6 +56,16 @@ export function DossierCards({ items }: { items: WorklistItem[] }) {
                   {item.replies.length > 0 && (
                     <span className="rounded-full bg-azur/10 px-2 py-0.5 text-[11px] font-medium text-azur ring-1 ring-azur/30">
                       Réponse à traiter
+                    </span>
+                  )}
+                  {item.promises.some((p) => p.status === "EN_COURS") && (
+                    <span className="rounded-full bg-lavande px-2 py-0.5 text-[11px] font-medium text-indigo-deep">
+                      Promesse en cours
+                    </span>
+                  )}
+                  {"requiresValidation" in item.nextAction && item.nextAction.requiresValidation && (
+                    <span className="rounded-full bg-sky/15 px-2 py-0.5 text-[11px] font-medium text-azur ring-1 ring-sky/40">
+                      Validation requise
                     </span>
                   )}
                 </div>

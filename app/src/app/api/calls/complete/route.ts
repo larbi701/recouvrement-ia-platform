@@ -19,5 +19,21 @@ export async function POST(req: Request) {
     },
   });
 
+  // Promise To Pay Manager : une promesse obtenue par téléphone devient un engagement suivi.
+  if (outcome === "PROMESSE_PAIEMENT" && promisedDate) {
+    const invoice = await prisma.invoice.findUnique({ where: { id: callTask.invoiceId } });
+    if (invoice) {
+      await prisma.promiseToPay.create({
+        data: {
+          invoiceId: callTask.invoiceId,
+          amountMad: invoice.amountMad,
+          promisedDate: new Date(promisedDate),
+          status: "EN_COURS",
+          source: "APPEL",
+        },
+      });
+    }
+  }
+
   return NextResponse.json({ callTask });
 }

@@ -33,7 +33,20 @@ model Invoice {
   reminders     Reminder[]
   replies       ClientReply[]
   callTasks     CallTask[]
+  promises      PromiseToPay[]
   createdAt     DateTime   @default(now())
+}
+
+model PromiseToPay {
+  id            String    @id @default(cuid())
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id])
+  invoiceId     String
+  amountMad     Int
+  promisedDate  DateTime
+  status        String    @default("EN_COURS") // EN_COURS | TENUE | ROMPUE
+  source        String    // APPEL | REPONSE | MANUEL
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
 }
 
 model Reminder {

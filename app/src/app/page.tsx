@@ -34,7 +34,7 @@ const CAPABILITIES = [
 
 export default async function Presentation() {
   const invoices = await prisma.invoice.findMany({
-    include: { client: true, reminders: true, replies: true, callTasks: true },
+    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
   });
   const items = invoices.map(buildWorklistItem);
   const totalOverdueMad = items.reduce((sum, i) => sum + i.amountMad, 0);

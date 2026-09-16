@@ -8,10 +8,17 @@ function daysAgo(n: number): Date {
   return d;
 }
 
+function daysFromNow(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
 async function main() {
   await prisma.clientReply.deleteMany();
   await prisma.reminder.deleteMany();
   await prisma.callTask.deleteMany();
+  await prisma.promiseToPay.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.client.deleteMany();
 
@@ -153,6 +160,15 @@ async function main() {
       receivedAt: daysAgo(10),
     },
   });
+  await prisma.promiseToPay.create({
+    data: {
+      invoiceId: cosmetiquesInvoice.id,
+      amountMad: 21_667,
+      promisedDate: daysFromNow(5),
+      status: "EN_COURS",
+      source: "REPONSE",
+    },
+  });
 
   // 4. Client qui conteste la facture
   const btp = await prisma.client.create({
@@ -289,7 +305,31 @@ async function main() {
     },
   });
 
-  console.log("Jeu de données synthétique créé : 6 clients, 6 factures.");
+  // 7. Facture pas encore échue — démontre le playbook PRE_DUE (rappel préventif)
+  const rabatTextile = await prisma.client.create({
+    data: {
+      name: "Rabat Textile Export",
+      sector: "Textile",
+      contactName: "Karim Fassi",
+      contactEmail: "k.fassi@rabat-textile.ma",
+      contactPhone: "+212 6 67 88 99 00",
+      behaviorNote: "Nouveau client, première facture, échéance à venir — aucun historique de retard.",
+      strategic: false,
+      chronicLatePayer: false,
+    },
+  });
+  await prisma.invoice.create({
+    data: {
+      clientId: rabatTextile.id,
+      reference: "FAC-2026-0171",
+      amountMad: 34_500,
+      issueDate: daysAgo(55),
+      dueDate: daysFromNow(5),
+      status: "EN_COURS",
+    },
+  });
+
+  console.log("Jeu de données synthétique créé : 7 clients, 7 factures.");
 }
 
 main()

@@ -1,4 +1,5 @@
 import type { ActivityItem } from "@/lib/activity";
+import { SPECIALIST_LABELS } from "@/lib/agents";
 import Link from "next/link";
 
 function relativeTime(iso: string): string {
@@ -35,7 +36,7 @@ export function ActivityFeed({ events, linkToDossiers = true }: { events: Activi
                       : "font-medium text-azur"
                   }
                 >
-                  {event.actor === "AGENT" ? "Yas" : "Humain"}
+                  {event.actor === "AGENT" && event.agent ? SPECIALIST_LABELS[event.agent] : "Humain"}
                 </span>
                 {event.detail ? ` · ${event.detail}` : ""}
               </p>

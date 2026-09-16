@@ -1,14 +1,15 @@
-import { computeRiskScore } from "@/lib/scoring";
-import { computeNextAction } from "@/lib/workflow";
+import { computeRiskScore, computeExtendedScores } from "@/lib/scoring";
+import { computeNextAction, computePlaybook } from "@/lib/workflow";
 import type { WorklistItem } from "@/lib/types";
 import type { Prisma } from "@prisma/client";
 
 type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
-  include: { client: true; reminders: true; replies: true; callTasks: true };
+  include: { client: true; reminders: true; replies: true; callTasks: true; promises: true };
 }>;
 
 export function buildWorklistItem(invoice: InvoiceWithRelations): WorklistItem {
-  const daysOverdue = Math.max(0, Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000));
+  // Signé : négatif = jours restants avant échéance (PRE_DUE), positif = jours de retard.
+  const daysOverdue = Math.floor((Date.now() - invoice.dueDate.getTime()) / 86_400_000);
   const emailCount = invoice.reminders.filter((r) => r.channel === "EMAIL").length;
   const whatsappCount = invoice.reminders.filter((r) => r.channel === "WHATSAPP").length;
   const hasUnresolvedReply = invoice.replies.length > 0;
@@ -20,15 +21,51 @@ export function buildWorklistItem(invoice: InvoiceWithRelations): WorklistItem {
     hasUnresolvedReply,
   });
 
+  // Approximation POC : historique calculé sur ce dossier uniquement (chaque client n'a qu'une
+  // facture dans le scénario démo). À agréger sur tout l'historique client si un client a
+  // plusieurs factures un jour.
+  const disputeCount = invoice.replies.filter((r) => r.classifiedIntent === "CONTESTATION").length;
+  const promisesTenues = invoice.promises.filter((p) => p.status === "TENUE").length;
+  const promisesRompues = invoice.promises.filter((p) => p.status === "ROMPUE").length;
+
+  const extendedScores = computeExtendedScores({
+    daysOverdue,
+    amountMad: invoice.amountMad,
+    chronicLatePayer: invoice.client.chronicLatePayer,
+    strategic: invoice.client.strategic,
+    hasUnresolvedReply,
+    disputeCount,
+    promisesTenues,
+    promisesRompues,
+  });
+
+  const activePromiseRecord = invoice.promises
+    .filter((p) => p.status === "EN_COURS")
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
+  const activePromise = activePromiseRecord
+    ? {
+        promisedDate: activePromiseRecord.promisedDate.toISOString(),
+        overdue: activePromiseRecord.promisedDate.getTime() < Date.now(),
+      }
+    : null;
+
+  const lastCallOutcome =
+    invoice.callTasks
+      .filter((c) => c.status === "FAIT")
+      .sort((a, b) => (b.completedAt?.getTime() ?? 0) - (a.completedAt?.getTime() ?? 0))[0]?.outcome ?? null;
+
   const nextAction = computeNextAction({
     daysOverdue,
+    amountMad: invoice.amountMad,
     hasUnresolvedReply,
     emailCount,
     whatsappCount,
     hasPendingCallTask: invoice.callTasks.some((c) => c.status === "A_FAIRE"),
     hasAnyCallTask: invoice.callTasks.length > 0,
+    lastCallOutcome,
     strategic: invoice.client.strategic,
     chronicLatePayer: invoice.client.chronicLatePayer,
+    activePromise,
   });
 
   return {
@@ -80,10 +117,24 @@ export function buildWorklistItem(invoice: InvoiceWithRelations): WorklistItem {
         createdAt: c.createdAt.toISOString(),
         completedAt: c.completedAt ? c.completedAt.toISOString() : null,
       })),
+    promises: invoice.promises
+      .slice()
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map((p) => ({
+        id: p.id,
+        amountMad: p.amountMad,
+        promisedDate: p.promisedDate.toISOString(),
+        status: p.status,
+        source: p.source,
+        createdAt: p.createdAt.toISOString(),
+        resolvedAt: p.resolvedAt ? p.resolvedAt.toISOString() : null,
+      })),
     score,
     priority,
     reasoning,
     breakdown,
+    playbook: computePlaybook(daysOverdue),
+    scores: extendedScores,
     nextAction,
   };
 }

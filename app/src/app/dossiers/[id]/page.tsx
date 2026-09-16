@@ -11,7 +11,7 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
 
   const invoice = await prisma.invoice.findUnique({
     where: { id },
-    include: { client: true, reminders: true, replies: true, callTasks: true },
+    include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
   });
 
   if (!invoice) notFound();

@@ -1,99 +1,205 @@
-// Décide la prochaine action du parcours de recouvrement — canal + escalade —
-// en s'inspirant du comportement d'un chargé de recouvrement humain :
-// il n'utilise pas le même canal pour tout le monde, il l'adapte à la situation.
+// Moteur de décision du recouvrement — suit les 6 playbooks officiels par ancienneté
+// (PROJECT_CHARTER_AND_FUNCTIONAL_SPECIFICATIONS.md §10) et les règles de validation
+// humaine obligatoire (§11). Niveau d'autonomie retenu pour le MVP : Niveau 2 (Semi-Autonome)
+// — l'IA exécute les actions standards, l'humain valide les actions sensibles.
 import { suggestedTone, type Tone } from "@/lib/scoring";
 
+export type PlaybookKey = "PRE_DUE" | "EARLY" | "STANDARD" | "INTENSIVE" | "PRE_LEGAL" | "LEGAL_TRANSFER";
+
+export const PLAYBOOK_LABELS: Record<PlaybookKey, string> = {
+  PRE_DUE: "Pré-échéance",
+  EARLY: "Recouvrement précoce (0-30j)",
+  STANDARD: "Recouvrement standard (31-60j)",
+  INTENSIVE: "Recouvrement intensif (61-90j)",
+  PRE_LEGAL: "Pré-contentieux (91-120j)",
+  LEGAL_TRANSFER: "Transmission avocat (120j+)",
+};
+
+// Seuil de validation humaine obligatoire, configurable par client à terme (§10 Administration).
+// Valeur par défaut retenue pour le POC.
+export const HITL_AMOUNT_THRESHOLD_MAD = 100_000;
+export const LEGAL_CEILING_DAYS = 120;
+
 export type NextAction =
-  | { kind: "WAIT_HUMAN" } // réponse client non résolue -> agent Négociateur, pas d'action automatique
-  | { kind: "LEGAL_ESCALATION" } // >= 120 jours, plafond légal marocain dépassé (loi 69-21)
-  | { kind: "CALL_TASK"; reason: string } // besoin d'un appel humain, l'agent prépare la fiche
-  | { kind: "EMAIL"; tone: Tone; reason: string }
-  | { kind: "WHATSAPP"; tone: Tone; reason: string };
+  | { kind: "WAIT_HUMAN"; playbook: PlaybookKey } // réponse client non résolue -> Dispute Specialist / humain
+  | { kind: "WAIT_PROMISE"; playbook: PlaybookKey; promisedDate: string } // promesse de paiement en cours, pas encore échue
+  | { kind: "LEGAL_TRANSFER"; playbook: "LEGAL_TRANSFER" } // >= 120 jours, transmission avocat obligatoire
+  | { kind: "CALL_TASK"; playbook: PlaybookKey; reason: string; requiresValidation: boolean }
+  | { kind: "EMAIL"; playbook: PlaybookKey; tone: Tone; reason: string; requiresValidation: boolean }
+  | { kind: "WHATSAPP"; playbook: PlaybookKey; tone: Tone; reason: string; requiresValidation: boolean };
 
 export type WorkflowInput = {
-  daysOverdue: number;
+  daysOverdue: number; // peut être négatif : jours restants avant échéance (PRE_DUE)
+  amountMad: number;
   hasUnresolvedReply: boolean;
   emailCount: number;
   whatsappCount: number;
   hasPendingCallTask: boolean;
   hasAnyCallTask: boolean;
+  lastCallOutcome: string | null; // dernier résultat d'appel connu (ex: NE_REPOND_PAS)
   strategic: boolean;
   chronicLatePayer: boolean;
+  activePromise: { promisedDate: string; overdue: boolean } | null; // promesse EN_COURS la plus récente
 };
 
-const LEGAL_CEILING_DAYS = 120;
+export function computePlaybook(daysOverdue: number): PlaybookKey {
+  if (daysOverdue < 0) return "PRE_DUE";
+  if (daysOverdue <= 30) return "EARLY";
+  if (daysOverdue <= 60) return "STANDARD";
+  if (daysOverdue <= 90) return "INTENSIVE";
+  if (daysOverdue <= LEGAL_CEILING_DAYS) return "PRE_LEGAL";
+  return "LEGAL_TRANSFER";
+}
+
+function toneLabel(tone: Tone): string {
+  return tone === "AMICALE"
+    ? "amical (premier contact)"
+    : tone === "FERME"
+    ? "ferme (relances précédentes restées sans effet)"
+    : "dernier avertissement (avant mise en demeure)";
+}
 
 export function computeNextAction(input: WorkflowInput): NextAction {
   const {
     daysOverdue,
+    amountMad,
     hasUnresolvedReply,
     emailCount,
     whatsappCount,
     hasPendingCallTask,
     hasAnyCallTask,
+    lastCallOutcome,
     strategic,
     chronicLatePayer,
+    activePromise,
   } = input;
 
+  const playbook = computePlaybook(daysOverdue);
   const reminderCount = emailCount + whatsappCount;
+  const sensitiveByDefault = strategic || amountMad > HITL_AMOUNT_THRESHOLD_MAD;
 
-  if (hasUnresolvedReply) return { kind: "WAIT_HUMAN" };
+  // §11 : litige en attente -> toujours un humain, quel que soit le playbook.
+  if (hasUnresolvedReply) return { kind: "WAIT_HUMAN", playbook };
+
+  // Une promesse de paiement en cours et pas encore échue : on respecte le délai donné, pas de relance.
+  if (activePromise && !activePromise.overdue) {
+    return { kind: "WAIT_PROMISE", playbook, promisedDate: activePromise.promisedDate };
+  }
+
   if (hasPendingCallTask) {
     return {
       kind: "CALL_TASK",
+      playbook,
       reason: "Une fiche d'appel est déjà en attente — à traiter avant toute nouvelle relance écrite.",
+      requiresValidation: sensitiveByDefault,
     };
   }
-  if (daysOverdue >= LEGAL_CEILING_DAYS) return { kind: "LEGAL_ESCALATION" };
 
-  // Client stratégique, jamais contacté : un humain appelle en premier, pas d'automatisation pure.
+  // LEGAL TRANSFER (120j+) : validation obligatoire, sort de l'amiable.
+  if (playbook === "LEGAL_TRANSFER") return { kind: "LEGAL_TRANSFER", playbook };
+
+  // Promesse rompue (échue et toujours EN_COURS) : on relance par appel avant d'écrire, validation requise.
+  if (activePromise?.overdue) {
+    return {
+      kind: "CALL_TASK",
+      playbook,
+      reason: `Promesse de paiement du ${new Date(activePromise.promisedDate).toLocaleDateString(
+        "fr-FR"
+      )} non tenue — à clarifier par téléphone avant d'escalader.`,
+      requiresValidation: true,
+    };
+  }
+
+  // PRE_DUE : rappel préventif, jamais sensible.
+  if (playbook === "PRE_DUE") {
+    return {
+      kind: "EMAIL",
+      playbook,
+      tone: "AMICALE",
+      reason: `Facture pas encore échue (échéance dans ${Math.abs(daysOverdue)} jour(s)) : rappel préventif standard.`,
+      requiresValidation: false,
+    };
+  }
+
+  // Client stratégique jamais contacté : appel humain en premier, quel que soit le playbook.
   if (strategic && reminderCount === 0 && !hasAnyCallTask) {
     return {
       kind: "CALL_TASK",
+      playbook,
       reason: "Client stratégique — premier contact recommandé par téléphone plutôt que par relance automatique.",
+      requiresValidation: true,
     };
   }
 
-  // Entre 16 et 30 jours de retard, avec au moins une relance déjà sans effet : on tente un appel avant d'insister par écrit.
-  if (daysOverdue >= 16 && daysOverdue <= 45 && reminderCount >= 1 && !hasAnyCallTask) {
-    return {
-      kind: "CALL_TASK",
-      reason: `${reminderCount} relance(s) écrite(s) sans réponse — un appel direct est plus efficace à ce stade.`,
-    };
-  }
-
-  const tone = suggestedTone(reminderCount);
-  const toneLabel =
-    tone === "AMICALE" ? "amical (premier contact)" : tone === "FERME" ? "ferme (relances précédentes restées sans effet)" : "dernier avertissement (avant mise en demeure)";
-
-  // Dernier avertissement avant le plafond légal : toujours l'email, même pour un client
-  // chronique habituellement contacté sur WhatsApp — c'est la trace écrite qui compte juridiquement.
-  if (tone === "MISE_EN_DEMEURE") {
+  // PRE_LEGAL (91-120j) : validation humaine obligatoire par définition du playbook, ton dernier avertissement.
+  if (playbook === "PRE_LEGAL") {
     return {
       kind: "EMAIL",
-      tone,
-      reason: `Ton ${toneLabel} : email choisi même si ce client est habituellement contacté sur WhatsApp — c'est la trace écrite qui compte juridiquement à ce stade, à l'approche du plafond légal.`,
+      playbook,
+      tone: "MISE_EN_DEMEURE",
+      reason:
+        "Pré-contentieux (91-120 jours) : dernier avertissement écrit avant transmission avocat, validation humaine obligatoire à ce stade.",
+      requiresValidation: true,
     };
   }
 
-  // Client chronique qui ignore les emails : on saute directement WhatsApp.
+  // INTENSIVE (61-90j) : téléphone puis escalade commerciale si l'appel échoue.
+  if (playbook === "INTENSIVE") {
+    if (!hasAnyCallTask || lastCallOutcome === "NE_REPOND_PAS") {
+      return {
+        kind: "CALL_TASK",
+        playbook,
+        reason: "Recouvrement intensif (61-90j) : tentative d'appel avant escalade au commercial référent.",
+        requiresValidation: true,
+      };
+    }
+    const tone = suggestedTone(reminderCount);
+    return {
+      kind: "EMAIL",
+      playbook,
+      tone,
+      reason: `Recouvrement intensif : appel(s) déjà tenté(s), email de suivi avec escalade commerciale en parallèle. Ton ${toneLabel(
+        tone
+      )}.`,
+      requiresValidation: true,
+    };
+  }
+
+  // STANDARD (31-60j) : un appel si aucun n'a encore été tenté, sinon email/WhatsApp classique.
+  if (playbook === "STANDARD" && !hasAnyCallTask) {
+    return {
+      kind: "CALL_TASK",
+      playbook,
+      reason: "Recouvrement standard (31-60j), aucun appel tenté — un contact direct est plus efficace à ce stade.",
+      requiresValidation: sensitiveByDefault,
+    };
+  }
+
+  // EARLY / STANDARD (suite) : email ou WhatsApp selon le profil client.
+  const tone = suggestedTone(reminderCount);
   if (chronicLatePayer && emailCount === 0) {
     return {
       kind: "WHATSAPP",
+      playbook,
       tone,
-      reason: `Client chronique (n'ouvre pas ses emails d'après l'historique) : WhatsApp dès le premier contact, ton ${toneLabel}.`,
+      reason: `Client chronique (n'ouvre pas ses emails d'après l'historique) : WhatsApp dès le premier contact, ton ${toneLabel(tone)}.`,
+      requiresValidation: sensitiveByDefault,
     };
   }
   if (daysOverdue >= 8 || chronicLatePayer) {
     return {
       kind: "WHATSAPP",
+      playbook,
       tone,
-      reason: `${daysOverdue} jours de retard (≥ 8) ou client chronique : WhatsApp est plus direct qu'un email à ce stade, ton ${toneLabel}.`,
+      reason: `${daysOverdue} jours de retard (≥ 8) ou client chronique : WhatsApp est plus direct qu'un email à ce stade, ton ${toneLabel(tone)}.`,
+      requiresValidation: sensitiveByDefault,
     };
   }
   return {
     kind: "EMAIL",
+    playbook,
     tone,
-    reason: `Retard encore léger (${daysOverdue} jours) sur un client sans historique de retard chronique : email standard, ton ${toneLabel}.`,
+    reason: `Retard encore léger (${daysOverdue} jours), playbook ${PLAYBOOK_LABELS[playbook]} : email standard, ton ${toneLabel(tone)}.`,
+    requiresValidation: sensitiveByDefault,
   };
 }

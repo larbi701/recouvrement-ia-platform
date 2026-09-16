@@ -1,5 +1,5 @@
-import type { NextAction } from "@/lib/workflow";
-import type { ScoreCriterion } from "@/lib/scoring";
+import type { NextAction, PlaybookKey } from "@/lib/workflow";
+import type { ScoreCriterion, ExtendedScores } from "@/lib/scoring";
 
 export type ReminderDTO = {
   id: string;
@@ -32,6 +32,16 @@ export type CallTaskDTO = {
   completedAt: string | null;
 };
 
+export type PromiseDTO = {
+  id: string;
+  amountMad: number;
+  promisedDate: string;
+  status: string; // EN_COURS | TENUE | ROMPUE
+  source: string; // APPEL | REPONSE | MANUEL
+  createdAt: string;
+  resolvedAt: string | null;
+};
+
 export type WorklistItem = {
   invoiceId: string;
   reference: string;
@@ -50,9 +60,12 @@ export type WorklistItem = {
   reminders: ReminderDTO[];
   replies: ReplyDTO[];
   callTasks: CallTaskDTO[];
+  promises: PromiseDTO[];
   score: number;
   priority: "URGENT" | "A_TRAITER" | "SURVEILLANCE";
   reasoning: string;
   breakdown: ScoreCriterion[];
+  playbook: PlaybookKey;
+  scores: ExtendedScores;
   nextAction: NextAction;
 };
