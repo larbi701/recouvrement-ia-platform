@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { llmErrorResponse } from "@/lib/llmError";
 import { prisma } from "@/lib/prisma";
 import { generateReminderDraft } from "@/lib/agentDraft";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
@@ -10,7 +11,7 @@ const MAX_BULK = 8; // un appel Claude par dossier : on borne le coût d'une act
 // Action groupée depuis le Portefeuille : prépare une relance par dossier sélectionné.
 // Tout arrive en brouillon dans Messages > À valider — jamais d'envoi sans validation humaine,
 // quel que soit le niveau de validation du dossier.
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const { invoiceIds } = await req.json();
   if (!Array.isArray(invoiceIds) || invoiceIds.length === 0) {
     return NextResponse.json({ error: "Aucun dossier sélectionné" }, { status: 400 });
@@ -60,4 +61,12 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ prepared, skipped });
+}
+
+export async function POST(req: Request) {
+  try {
+    return await handle(req);
+  } catch (e) {
+    return llmErrorResponse(e);
+  }
 }

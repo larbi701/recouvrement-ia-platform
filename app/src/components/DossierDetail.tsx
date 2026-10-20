@@ -65,12 +65,11 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId: item.invoiceId, channel }),
       });
-      if (res.status === 409) {
-        const err = await res.json();
-        setConfirmation(err.error);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        setConfirmation(err?.error ?? "Échec de la génération du message.");
         return;
       }
-      if (!res.ok) throw new Error("Échec de la génération");
       const data: GenerateResponse = await res.json();
       setDraft(data.draft);
       setDraftTone(data.tone);
@@ -133,12 +132,11 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId: item.invoiceId, reason: item.nextAction.reason }),
       });
-      if (res.status === 409) {
-        const err = await res.json();
-        setConfirmation(err.error);
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        setConfirmation(err?.error ?? "Échec de la création de la fiche d'appel.");
         return;
       }
-      if (!res.ok) throw new Error("Échec de la génération");
       router.refresh();
     } catch {
       setConfirmation("Erreur — vérifie que ta clé API Claude est bien renseignée dans .env.local");
@@ -182,7 +180,11 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId: item.invoiceId, content: replyText }),
       });
-      if (!res.ok) throw new Error("Échec de la classification");
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        setConfirmation(err?.error ?? "Échec de l'analyse de la réponse.");
+        return;
+      }
       setReplyText("");
       setShowReplySimulator(false);
       router.refresh();

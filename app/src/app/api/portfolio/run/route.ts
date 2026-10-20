@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { llmErrorResponse } from "@/lib/llmError";
 import { prisma } from "@/lib/prisma";
 import { generateReminderDraft } from "@/lib/agentDraft";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
@@ -10,7 +11,7 @@ import { getAgentConfigs, SUSPENDED_MESSAGE } from "@/lib/agentConfig";
 // - Agent suspendu : rien ne part, la route refuse.
 // - Autonomie "propose seulement" : tout est préparé en brouillon, l'humain valide dans Messages.
 // - Message bloqué par le garde-fou : jamais envoyé, déposé en brouillon avec le motif.
-export async function POST() {
+async function handle() {
   const [invoices, settings, agents] = await Promise.all([
     prisma.invoice.findMany({
       include: { client: true, reminders: true, replies: true, callTasks: true, promises: true },
@@ -83,4 +84,12 @@ export async function POST() {
   }
 
   return NextResponse.json({ results, drafted });
+}
+
+export async function POST() {
+  try {
+    return await handle();
+  } catch (e) {
+    return llmErrorResponse(e);
+  }
 }

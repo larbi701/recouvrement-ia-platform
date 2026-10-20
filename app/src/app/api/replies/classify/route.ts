@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { llmErrorResponse } from "@/lib/llmError";
 import { prisma } from "@/lib/prisma";
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { getSettings } from "@/lib/settings";
@@ -9,7 +10,7 @@ const VALID_INTENTS = ["DEMANDE_DELAI", "CONTESTATION", "CONFIRMATION", "AUTRE"]
 // Agent "Négociateur" — en direct : lit une réponse du client, la classe, la résume,
 // et propose une action. C'est la brique qui manquait (les réponses du scénario de
 // démo initial sont pré-écrites, mais toute nouvelle réponse passe maintenant ici).
-export async function POST(req: Request) {
+async function handle(req: Request) {
   const { invoiceId, content } = await req.json();
 
   if (!invoiceId || !content) {
@@ -107,4 +108,12 @@ Règles pour proposedAction :
   });
 
   return NextResponse.json({ reply });
+}
+
+export async function POST(req: Request) {
+  try {
+    return await handle(req);
+  } catch (e) {
+    return llmErrorResponse(e);
+  }
 }
