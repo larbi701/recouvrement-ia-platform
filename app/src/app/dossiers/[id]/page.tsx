@@ -28,7 +28,7 @@ export default async function DossierPage({ params }: { params: Promise<{ id: st
         breadcrumb={[
           { label: "Yas", href: "/" },
           { label: "Centre d'action", href: "/cockpit" },
-          { label: "Dossiers par priorité", href: "/dossiers" },
+          { label: "Portefeuille", href: "/portfolio" },
           { label: item.clientName },
         ]}
         simulatedDate={settings.simulatedDate}

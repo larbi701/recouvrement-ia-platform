@@ -45,12 +45,17 @@ function extractMadAmounts(text: string): number[] {
 
 export function checkGeneratedContent(
   text: string,
-  context: { invoiceReference: string; amountMad: number; maxLength?: number }
+  context: { invoiceReference: string; amountMad: number; maxLength?: number; extraForbiddenTerms?: string }
 ): GuardrailResult {
   const violations: string[] = [];
   const normalizedText = normalize(text);
 
-  for (const term of FORBIDDEN_TERMS) {
+  const extra = (context.extraForbiddenTerms ?? "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  for (const term of [...FORBIDDEN_TERMS, ...extra]) {
     if (normalizedText.includes(normalize(term))) {
       violations.push(`Terme hors cadre détecté : "${term}"`);
     }

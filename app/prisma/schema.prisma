@@ -19,6 +19,7 @@ model Client {
   chronicLatePayer  Boolean   @default(false) // ignore les emails -> l'agent saute direct au canal WhatsApp
   isPublicDebtor    Boolean   @default(false) // organisme public : exclu des playbooks automatiques, décision humaine systématique
   invoices          Invoice[]
+  notes             ClientNote[]
   createdAt         DateTime  @default(now())
 }
 
@@ -57,9 +58,27 @@ model Reminder {
   channel     String   @default("EMAIL") // EMAIL | WHATSAPP
   tone        String   // AMICALE | FERME | MISE_EN_DEMEURE
   content     String
-  status      String   // BROUILLON | ENVOYEE_SIMULEE
+  status      String   // BROUILLON (à valider) | ENVOYEE_SIMULEE | REJETEE
   createdBy   String   // AGENT | HUMAIN
+  note        String?  // motif de blocage par le garde-fou, ou de rejet
   sentAt      DateTime @default(now())
+}
+
+// Contrôle de chaque agent IA : suspension (interrupteur) et niveau d'autonomie.
+// Lu par les routes qui font appel à Claude — un agent suspendu n'est jamais appelé.
+model AgentConfig {
+  key       String   @id // ex: COMMUNICATION_SPECIALIST
+  enabled   Boolean  @default(true)
+  autonomy  String   @default("AUTO") // AUTO (exécute seul les actions standard) | PROPOSE (prépare, l'humain valide tout)
+  updatedAt DateTime @updatedAt
+}
+
+model ClientNote {
+  id        String   @id @default(cuid())
+  client    Client   @relation(fields: [clientId], references: [id])
+  clientId  String
+  content   String
+  createdAt DateTime @default(now())
 }
 
 model CallTask {
@@ -88,6 +107,10 @@ model Settings {
   companyName         String   @default("Anfa Distribution SARL") // raison sociale du créancier, utilisée dans les messages générés
   companySector       String   @default("Distribution B2B de fournitures industrielles")
   simulatedDate       DateTime @default(now()) // horloge de démo pilotée par +1j/+7j — jamais l'heure réelle dans la logique métier
+  channelEmail        Boolean  @default(true) // canal autorisé pour les relances
+  channelWhatsapp     Boolean  @default(true)
+  extraForbiddenTerms String   @default("") // termes interdits ajoutés par l'utilisateur, séparés par des virgules
+  styleGuidelines     String   @default("") // consignes de style ajoutées au prompt de rédaction
   updatedAt           DateTime @updatedAt
 }
 
@@ -99,5 +122,6 @@ model ClientReply {
   classifiedIntent String?  // DEMANDE_DELAI | CONTESTATION | CONFIRMATION | AUTRE
   agentSummary     String?
   proposedAction   String?
+  handled          Boolean  @default(false) // traitée par l'équipe : ne bloque plus le dossier
   receivedAt       DateTime @default(now())
 }

@@ -8,6 +8,7 @@ export type ReminderDTO = {
   content: string;
   status: string;
   createdBy: string;
+  note: string | null;
   sentAt: string;
 };
 
@@ -17,6 +18,7 @@ export type ReplyDTO = {
   classifiedIntent: string | null;
   agentSummary: string | null;
   proposedAction: string | null;
+  handled: boolean;
   receivedAt: string;
 };
 
@@ -58,7 +60,8 @@ export type WorklistItem = {
   strategic: boolean;
   chronicLatePayer: boolean;
   isPublicDebtor: boolean;
-  reminders: ReminderDTO[];
+  reminders: ReminderDTO[]; // uniquement les messages réellement envoyés
+  drafts: ReminderDTO[]; // brouillons en attente de validation humaine
   replies: ReplyDTO[];
   callTasks: CallTaskDTO[];
   promises: PromiseDTO[];

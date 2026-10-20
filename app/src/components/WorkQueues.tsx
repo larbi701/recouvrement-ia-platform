@@ -2,13 +2,13 @@ import Link from "next/link";
 import type { WorklistItem } from "@/lib/types";
 import { DEFAULT_THRESHOLDS } from "@/lib/workflow";
 
-// §12.03 des specs : Work Queues, inspirées de Growfin. Un dossier peut apparaître dans
-// plusieurs files à la fois (ex: urgent ET high value) — ce ne sont pas des catégories
-// exclusives, ce sont des angles de lecture du même portefeuille.
+// Catégories de lecture du portefeuille. Un dossier peut apparaître dans plusieurs
+// catégories à la fois (ex : urgent ET gros montant) : ce sont des angles de lecture.
 export type QueueKey = "urgent" | "high_value" | "promises" | "strategic" | "disputes" | "validation";
 
-// Le seuil "High Value" suit le seuil de validation configuré dans Paramètres (§12.10),
-// d'où une fonction plutôt qu'un tableau statique — le défaut ne sert qu'en secours.
+export const QUEUE_KEYS: QueueKey[] = ["urgent", "high_value", "promises", "strategic", "disputes", "validation"];
+
+// Le seuil "Gros montants" suit le seuil de validation configuré dans Paramètres.
 export function getWorkQueues(
   hitlAmountThreshold: number = DEFAULT_THRESHOLDS.hitlAmountThreshold
 ): {
@@ -45,15 +45,16 @@ export function getWorkQueues(
     {
       key: "disputes",
       label: "Litiges",
-      description: "Litige signalé par le client, analysé par le Dispute Specialist",
-      match: (i) => i.replies.some((r) => r.classifiedIntent === "CONTESTATION"),
+      description: "Réponse client à traiter, analysée par le Dispute Specialist",
+      match: (i) => i.replies.some((r) => !r.handled),
     },
     {
       key: "validation",
-      label: "En attente de validation",
+      label: "À valider",
       description: "Action proposée par Yas, en attente de validation humaine",
       match: (i) =>
         i.nextAction.kind === "LEGAL_TRANSFER" ||
+        i.drafts.length > 0 ||
         (("requiresValidation" in i.nextAction) && i.nextAction.requiresValidation),
     },
   ];
@@ -78,7 +79,7 @@ export function WorkQueueGrid({ items, hitlAmountThreshold }: { items: WorklistI
         return (
           <Link
             key={queue.key}
-            href={`/dossiers?queue=${queue.key}`}
+            href={`/portfolio?queue=${queue.key}`}
             className={`rounded-xl border p-4 transition hover:border-violet-velos/50 ${QUEUE_STYLES[queue.key]}`}
           >
             <p className="text-xs font-medium uppercase tracking-wide text-graphite/60">{queue.label}</p>

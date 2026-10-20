@@ -9,6 +9,10 @@ export type PlatformSettings = {
   companyName: string;
   companySector: string;
   simulatedDate: Date;
+  channelEmail: boolean;
+  channelWhatsapp: boolean;
+  extraForbiddenTerms: string;
+  styleGuidelines: string;
 };
 
 const DEFAULTS = {
@@ -40,5 +44,9 @@ export async function getSettings(): Promise<PlatformSettings> {
     companyName: row.companyName,
     companySector: row.companySector,
     simulatedDate: row.simulatedDate,
+    channelEmail: row.channelEmail,
+    channelWhatsapp: row.channelWhatsapp,
+    extraForbiddenTerms: row.extraForbiddenTerms,
+    styleGuidelines: row.styleGuidelines,
   };
 }

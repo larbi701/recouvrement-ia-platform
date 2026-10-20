@@ -2,12 +2,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { getSettings } from "@/lib/settings";
+import { getAgentConfigs, SUSPENDED_MESSAGE } from "@/lib/agentConfig";
 
 // L'IA ne passe pas l'appel elle-même (pas d'agent vocal dans ce POC) : elle prépare
 // une fiche d'appel pour un humain, et crée la tâche à traiter. Voir MEMOIRE-PROJET.md
 // pour la décision de reporter l'agent vocal (Twilio/ElevenLabs) à une phase séparée.
 export async function POST(req: Request) {
   const { invoiceId, reason } = await req.json();
+
+  if (!(await getAgentConfigs()).COLLECTION_STRATEGIST.enabled) {
+    return NextResponse.json({ error: SUSPENDED_MESSAGE }, { status: 409 });
+  }
 
   const [invoice, settings] = await Promise.all([
     prisma.invoice.findUnique({
@@ -64,6 +69,7 @@ Réponds uniquement avec la liste à puces, sans titre ni commentaire.`;
       reason: reason ?? "Appel recommandé par l'agent.",
       talkingPoints,
       status: "A_FAIRE",
+      createdAt: settings.simulatedDate,
     },
   });
 

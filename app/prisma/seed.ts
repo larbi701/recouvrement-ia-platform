@@ -15,6 +15,8 @@ function daysFromNow(n: number): Date {
 }
 
 async function main() {
+  await prisma.clientNote.deleteMany();
+  await prisma.agentConfig.deleteMany();
   await prisma.clientReply.deleteMany();
   await prisma.reminder.deleteMany();
   await prisma.callTask.deleteMany();
@@ -28,9 +30,9 @@ async function main() {
     data: {
       name: "Atlas Négoce",
       sector: "Distribution alimentaire",
-      contactName: "Yassine Belghiti",
+      contactName: "Kenza",
       contactEmail: "y.belghiti@atlas-negoce.ma",
-      contactPhone: "+212 6 61 22 33 44",
+      contactPhone: "+212 668 820 391",
       behaviorNote: "Client fiable, paie habituellement à temps, premier retard depuis 2 ans.",
       strategic: false,
       chronicLatePayer: false,
@@ -52,7 +54,7 @@ async function main() {
       channel: "EMAIL",
       tone: "AMICALE",
       content:
-        "Bonjour Yassine, un petit rappel amical : la facture FAC-2026-0142 de 18 000 MAD est arrivée à échéance il y a quelques jours. Peut-être un simple oubli — dites-nous si un justificatif de paiement est déjà en route.",
+        "Bonjour Kenza, un petit rappel amical : la facture FAC-2026-0142 de 18 000 MAD est arrivée à échéance il y a quelques jours. Peut-être un simple oubli — dites-nous si un justificatif de paiement est déjà en route.",
       status: "ENVOYEE_SIMULEE",
       createdBy: "AGENT",
       sentAt: daysAgo(3),
@@ -430,9 +432,9 @@ async function main() {
     data: {
       name: "Nord Plast Emballages",
       sector: "Plasturgie / emballage",
-      contactName: "Leila Sekkat",
+      contactName: "Kenza",
       contactEmail: "l.sekkat@nordplast.ma",
-      contactPhone: "+212 6 69 11 22 33",
+      contactPhone: "+212 668 820 391",
       behaviorNote: "Client récent, deuxième facture, aucun incident sur la première.",
       strategic: false,
       chronicLatePayer: false,
@@ -466,9 +468,9 @@ async function main() {
     data: {
       name: "Rif Agro Export",
       sector: "Agroalimentaire / export",
-      contactName: "Younes Berrada",
+      contactName: "Kenza",
       contactEmail: "y.berrada@rifagro.ma",
-      contactPhone: "+212 6 70 22 33 44",
+      contactPhone: "+212 668 820 391",
       behaviorNote: "Avait promis un paiement le 5 du mois par téléphone, engagement non tenu depuis.",
       strategic: false,
       chronicLatePayer: false,
@@ -506,6 +508,20 @@ async function main() {
       source: "APPEL",
       createdAt: daysAgo(15),
       resolvedAt: daysAgo(2),
+    },
+  });
+
+    // Brouillon préparé par Yas, en attente de validation — alimente l'onglet Messages > À valider.
+  await prisma.reminder.create({
+    data: {
+      invoiceId: rifAgroInvoice.id,
+      channel: "WHATSAPP",
+      tone: "AMICALE",
+      content:
+        "Bonjour Kenza, petit rappel : la facture FAC-2026-0134 (39 800 MAD) est échue depuis 35 jours. Pouvez-vous nous confirmer la date de règlement ? Merci.\nAnfa Distribution SARL",
+      status: "BROUILLON",
+      createdBy: "AGENT",
+      sentAt: daysAgo(0),
     },
   });
 

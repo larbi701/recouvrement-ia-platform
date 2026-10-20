@@ -9,16 +9,29 @@ type InvoiceWithRelations = Prisma.InvoiceGetPayload<{
 
 export function buildWorklistItem(
   invoice: InvoiceWithRelations,
-  thresholds: PlaybookThresholds & { simulatedDate?: Date } = DEFAULT_THRESHOLDS
+  thresholds: PlaybookThresholds & { simulatedDate?: Date; channelEmail?: boolean; channelWhatsapp?: boolean } = DEFAULT_THRESHOLDS
 ): WorklistItem {
+  // Les brouillons (à valider) et les messages rejetés ne comptent pas comme des relances envoyées.
+  const sentReminders = invoice.reminders.filter((r) => r.status === "ENVOYEE_SIMULEE");
+  const draftReminders = invoice.reminders.filter((r) => r.status === "BROUILLON");
+  const toReminderDTO = (r: (typeof invoice.reminders)[number]) => ({
+    id: r.id,
+    channel: r.channel,
+    tone: r.tone,
+    content: r.content,
+    status: r.status,
+    createdBy: r.createdBy,
+    note: r.note,
+    sentAt: r.sentAt.toISOString(),
+  });
   // Horloge de démo (§ simulatedDate) — jamais l'heure réelle : sinon "+7 jours" côté UI ne
   // changerait rien aux statuts affichés.
   const now = (thresholds.simulatedDate ?? new Date()).getTime();
   // Signé : négatif = jours restants avant échéance (PRE_DUE), positif = jours de retard.
   const daysOverdue = Math.floor((now - invoice.dueDate.getTime()) / 86_400_000);
-  const emailCount = invoice.reminders.filter((r) => r.channel === "EMAIL").length;
-  const whatsappCount = invoice.reminders.filter((r) => r.channel === "WHATSAPP").length;
-  const hasUnresolvedReply = invoice.replies.length > 0;
+  const emailCount = sentReminders.filter((r) => r.channel === "EMAIL").length;
+  const whatsappCount = sentReminders.filter((r) => r.channel === "WHATSAPP").length;
+  const hasUnresolvedReply = invoice.replies.some((r) => !r.handled);
 
   const { score, priority, reasoning, breakdown } = computeRiskScore(
     {
@@ -66,7 +79,7 @@ export function buildWorklistItem(
       .filter((c) => c.status === "FAIT")
       .sort((a, b) => (b.completedAt?.getTime() ?? 0) - (a.completedAt?.getTime() ?? 0))[0]?.outcome ?? null;
 
-  const nextAction = computeNextAction({
+  let nextAction = computeNextAction({
     daysOverdue,
     amountMad: invoice.amountMad,
     hasUnresolvedReply,
@@ -81,6 +94,13 @@ export function buildWorklistItem(
     activePromise,
     thresholds,
   });
+
+  // Canaux autorisés (Paramètres) : si le canal prévu est désactivé, on bascule sur l'autre.
+  if (nextAction.kind === "WHATSAPP" && thresholds.channelWhatsapp === false && thresholds.channelEmail !== false) {
+    nextAction = { ...nextAction, kind: "EMAIL", reason: `${nextAction.reason} WhatsApp désactivé dans Paramètres : email utilisé à la place.` };
+  } else if (nextAction.kind === "EMAIL" && thresholds.channelEmail === false && thresholds.channelWhatsapp !== false) {
+    nextAction = { ...nextAction, kind: "WHATSAPP", reason: `${nextAction.reason} Email désactivé dans Paramètres : WhatsApp utilisé à la place.` };
+  }
 
   return {
     invoiceId: invoice.id,
@@ -98,26 +118,26 @@ export function buildWorklistItem(
     strategic: invoice.client.strategic,
     chronicLatePayer: invoice.client.chronicLatePayer,
     isPublicDebtor: invoice.client.isPublicDebtor,
-    reminders: invoice.reminders
+    reminders: sentReminders
       .slice()
       .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime())
+      .map(toReminderDTO),
+    drafts: draftReminders
+      .slice()
+      .sort((a, b) => b.sentAt.getTime() - a.sentAt.getTime())
+      .map(toReminderDTO),
+    replies: invoice.replies
+      .slice()
+      .sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime())
       .map((r) => ({
         id: r.id,
-        channel: r.channel,
-        tone: r.tone,
         content: r.content,
-        status: r.status,
-        createdBy: r.createdBy,
-        sentAt: r.sentAt.toISOString(),
+        classifiedIntent: r.classifiedIntent,
+        agentSummary: r.agentSummary,
+        proposedAction: r.proposedAction,
+        handled: r.handled,
+        receivedAt: r.receivedAt.toISOString(),
       })),
-    replies: invoice.replies.map((r) => ({
-      id: r.id,
-      content: r.content,
-      classifiedIntent: r.classifiedIntent,
-      agentSummary: r.agentSummary,
-      proposedAction: r.proposedAction,
-      receivedAt: r.receivedAt.toISOString(),
-    })),
     callTasks: invoice.callTasks
       .slice()
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())

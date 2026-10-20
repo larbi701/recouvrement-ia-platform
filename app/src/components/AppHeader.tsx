@@ -1,24 +1,22 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { LogoWordmark } from "@/components/Logo";
 import { ClockControl } from "@/components/ClockControl";
 
-// Ordre du plus général (vue globale du portefeuille) au plus particulier (le système
-// lui-même) — suit la séquence réelle du workflow (§9 des specs) : on alimente d'abord
-// la plateforme, on regarde l'ensemble, puis on affine progressivement le niveau de zoom.
+// Huit écrans, dans l'ordre du travail réel : on alimente, on pilote, on traite, on retrouve
+// un dossier, on regarde un client, on valide les messages, on contrôle les agents, on règle.
 const NAV_LINKS = [
-  { href: "/import", label: "Importer", numbering: null },
-  { href: "/dashboard", label: "Tableau de bord", numbering: "01" },
-  { href: "/cockpit", label: "Centre d'action", numbering: "02" },
-  { href: "/dossiers", label: "Dossiers par priorité", numbering: "03" },
-  { href: "/portfolio", label: "Portefeuille", numbering: "04" },
-  { href: "/customers", label: "Vue client 360", numbering: "05" },
-  { href: "/forecast", label: "Prévisions de trésorerie", numbering: "08" },
-  { href: "/agents", label: "Agents IA", numbering: "07" },
-  { href: "/team", label: "Interventions humaines", numbering: "09" },
-  { href: "/settings", label: "Paramètres", numbering: "10" },
+  { href: "/import", label: "Importer" },
+  { href: "/dashboard", label: "Pilotage" },
+  { href: "/cockpit", label: "Centre d'action" },
+  { href: "/portfolio", label: "Portefeuille" },
+  { href: "/customers", label: "Clients" },
+  { href: "/messages", label: "Messages", badge: true },
+  { href: "/agents", label: "Agents IA" },
+  { href: "/settings", label: "Paramètres" },
 ];
 
-export function AppHeader({
+export async function AppHeader({
   breadcrumb,
   simulatedDate,
 }: {
@@ -26,6 +24,13 @@ export function AppHeader({
   simulatedDate?: Date;
 }) {
   const showNav = Boolean(breadcrumb);
+  const [drafts, unhandled] = showNav
+    ? await Promise.all([
+        prisma.reminder.count({ where: { status: "BROUILLON" } }),
+        prisma.clientReply.count({ where: { handled: false } }),
+      ])
+    : [0, 0];
+  const pending = drafts + unhandled;
 
   return (
     <header className="border-b border-lavande-struct bg-white">
@@ -44,9 +49,11 @@ export function AppHeader({
           {NAV_LINKS.map((link, i) => (
             <span key={link.href} className="flex items-center gap-x-4">
               {i === 1 && <span className="h-3 w-px bg-lavande-struct" aria-hidden />}
-              <Link href={link.href} className="flex items-center gap-1 text-graphite/60 hover:text-indigo-deep">
-                {link.numbering && <span className="text-graphite/30">{link.numbering}</span>}
+              <Link href={link.href} className="flex items-center gap-1.5 text-graphite/60 hover:text-indigo-deep">
                 {link.label}
+                {link.badge && pending > 0 && (
+                  <span className="rounded-full bg-corail px-1.5 text-[10px] font-semibold leading-4 text-white">{pending}</span>
+                )}
               </Link>
             </span>
           ))}

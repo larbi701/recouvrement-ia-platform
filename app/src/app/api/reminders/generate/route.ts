@@ -3,10 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { computeRiskScore } from "@/lib/scoring";
 import { generateReminderDraft } from "@/lib/agentDraft";
 import { getSettings } from "@/lib/settings";
+import { getAgentConfigs, SUSPENDED_MESSAGE } from "@/lib/agentConfig";
 
 export async function POST(req: Request) {
   const { invoiceId, channel: requestedChannel } = await req.json();
   const channel = requestedChannel === "WHATSAPP" ? "WHATSAPP" : "EMAIL";
+
+  if (!(await getAgentConfigs()).COMMUNICATION_SPECIALIST.enabled) {
+    return NextResponse.json({ error: SUSPENDED_MESSAGE }, { status: 409 });
+  }
 
   const [invoice, settings] = await Promise.all([
     prisma.invoice.findUnique({

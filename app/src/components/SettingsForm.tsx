@@ -86,6 +86,10 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
         preLegalMaxDays,
         companyName,
         companySector,
+        channelEmail,
+        channelWhatsapp,
+        extraForbiddenTerms,
+        styleGuidelines,
       } = values;
       const res = await fetch("/api/settings/update", {
         method: "POST",
@@ -98,6 +102,10 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
           preLegalMaxDays,
           companyName,
           companySector,
+          channelEmail,
+          channelWhatsapp,
+          extraForbiddenTerms,
+          styleGuidelines,
         }),
       });
       const data = await res.json();
@@ -132,6 +140,38 @@ export function SettingsForm({ initial }: { initial: PlatformSettings }) {
             value={values.companySector}
             onChange={(v) => set("companySector", v)}
             hint="Donne le contexte à l'agent qui rédige les messages."
+          />
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-lavande-struct bg-white p-5">
+        <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-graphite/60">Canaux et style des messages</h2>
+        <p className="mb-3 text-xs text-graphite/50">
+          Si un canal est désactivé, Yas bascule sur l&apos;autre dès la prochaine recommandation. Les consignes de style et les
+          termes interdits s&apos;appliquent à tous les messages rédigés ensuite.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <label className="flex items-center gap-2 rounded-lg border border-lavande-struct p-3 text-sm font-medium text-indigo-deep">
+            <input type="checkbox" checked={values.channelEmail} onChange={(e) => set("channelEmail", e.target.checked)} />
+            Relances par email
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border border-lavande-struct p-3 text-sm font-medium text-indigo-deep">
+            <input type="checkbox" checked={values.channelWhatsapp} onChange={(e) => set("channelWhatsapp", e.target.checked)} />
+            Relances par WhatsApp
+          </label>
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-3">
+          <TextField
+            label="Consignes de style"
+            value={values.styleGuidelines}
+            onChange={(v) => set("styleGuidelines", v)}
+            hint="Ex : vouvoiement systématique, ne jamais citer de pénalités de retard. Ajouté au prompt de rédaction."
+          />
+          <TextField
+            label="Termes interdits supplémentaires"
+            value={values.extraForbiddenTerms}
+            onChange={(v) => set("extraForbiddenTerms", v)}
+            hint="Séparés par des virgules. Un message qui en contient un est retenu par le garde-fou, jamais envoyé seul."
           />
         </div>
       </div>

@@ -58,6 +58,20 @@ export function buildActivityFeed(items: WorklistItem[], limit = 8): ActivityIte
         invoiceId: item.invoiceId,
       });
     }
+    for (const d of item.drafts) {
+      events.push({
+        id: `draft-${d.id}`,
+        at: d.sentAt,
+        actor: "AGENT",
+        agent: "COMMUNICATION_SPECIALIST",
+        title: d.note
+          ? `Message retenu par le garde-fou — ${item.clientName}`
+          : `Brouillon ${CHANNEL_LABELS[d.channel] ?? d.channel} préparé, à valider — ${item.clientName}`,
+        detail: d.note ?? `Ton ${TONE_LABELS[d.tone] ?? d.tone}`,
+        clientName: item.clientName,
+        invoiceId: item.invoiceId,
+      });
+    }
     for (const c of item.callTasks) {
       events.push({
         id: `call-created-${c.id}`,

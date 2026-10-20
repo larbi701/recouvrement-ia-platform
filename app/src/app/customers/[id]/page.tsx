@@ -6,6 +6,7 @@ import { getSettings } from "@/lib/settings";
 import { buildActivityFeed } from "@/lib/activity";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { AppHeader } from "@/components/AppHeader";
+import { ClientContact } from "@/components/ClientContact";
 import { PLAYBOOK_LABELS } from "@/lib/workflow";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +27,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
       where: { id },
       include: {
         invoices: { include: { client: true, reminders: true, replies: true, callTasks: true, promises: true } },
+        notes: { orderBy: { createdAt: "desc" } },
       },
     }),
     getSettings(),
@@ -46,7 +48,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader
-        breadcrumb={[{ label: "Yas", href: "/" }, { label: "Vue client 360", href: "/customers" }, { label: client.name }]}
+        breadcrumb={[{ label: "Yas", href: "/" }, { label: "Clients", href: "/customers" }, { label: client.name }]}
         simulatedDate={settings.simulatedDate}
       />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
@@ -65,6 +67,27 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             {client.contactPhone || "téléphone non renseigné"}
           </p>
           <div className="mt-3 rounded-lg bg-perle p-3 text-sm text-graphite">{client.behaviorNote}</div>
+          <div className="mt-4 border-t border-lavande-struct pt-4">
+            <ClientContact
+              clientId={client.id}
+              contactName={client.contactName}
+              phone={client.contactPhone}
+              email={client.contactEmail}
+              companyName={settings.companyName}
+            />
+          </div>
+          {client.notes.length > 0 && (
+            <ul className="mt-3 flex flex-col gap-1.5">
+              {client.notes.map((n) => (
+                <li key={n.id} className="rounded-lg border border-lavande-struct px-3 py-2 text-sm text-graphite">
+                  {n.content}
+                  <span className="ml-2 text-[11px] text-graphite/40">
+                    note du {n.createdAt.toLocaleDateString("fr-FR")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -11,6 +11,10 @@ export async function POST(req: Request) {
     preLegalMaxDays,
     companyName,
     companySector,
+    channelEmail,
+    channelWhatsapp,
+    extraForbiddenTerms,
+    styleGuidelines,
   } = body;
 
   const values = [hitlAmountThreshold, earlyMaxDays, standardMaxDays, intensiveMaxDays, preLegalMaxDays];
@@ -27,7 +31,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "La raison sociale et le secteur ne peuvent pas être vides" }, { status: 400 });
   }
 
+  if (typeof channelEmail !== "boolean" || typeof channelWhatsapp !== "boolean") {
+    return NextResponse.json({ error: "Canaux invalides" }, { status: 400 });
+  }
+  if (!channelEmail && !channelWhatsapp) {
+    return NextResponse.json({ error: "Au moins un canal (email ou WhatsApp) doit rester activé" }, { status: 400 });
+  }
+
   const data = {
+    channelEmail,
+    channelWhatsapp,
+    extraForbiddenTerms: typeof extraForbiddenTerms === "string" ? extraForbiddenTerms.trim().slice(0, 500) : "",
+    styleGuidelines: typeof styleGuidelines === "string" ? styleGuidelines.trim().slice(0, 500) : "",
     hitlAmountThreshold,
     earlyMaxDays,
     standardMaxDays,

@@ -7,6 +7,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { buildActivityFeed } from "@/lib/activity";
 import { buildMailtoUrl, buildWhatsappUrl, buildTelUrl } from "@/lib/deeplinks";
 import { ClassificationCard } from "@/components/ClassificationCard";
+import { ReplyResolver } from "@/components/ReplyResolver";
 
 const TONE_LABELS: Record<string, string> = {
   AMICALE: "Amicale",
@@ -64,6 +65,11 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId: item.invoiceId, channel }),
       });
+      if (res.status === 409) {
+        const err = await res.json();
+        setConfirmation(err.error);
+        return;
+      }
       if (!res.ok) throw new Error("Échec de la génération");
       const data: GenerateResponse = await res.json();
       setDraft(data.draft);
@@ -127,6 +133,11 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId: item.invoiceId, reason: item.nextAction.reason }),
       });
+      if (res.status === 409) {
+        const err = await res.json();
+        setConfirmation(err.error);
+        return;
+      }
       if (!res.ok) throw new Error("Échec de la génération");
       router.refresh();
     } catch {
@@ -199,11 +210,11 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
             {item.sector} · {item.contactName} · {item.contactEmail} · {item.contactPhone}
           </p>
           <a href={`/customers/${item.clientId}`} className="text-xs text-azur hover:underline">
-            Voir la vue client 360 complète →
+            Ouvrir la fiche client (appeler, WhatsApp, notes) →
           </a>
           <div className="mt-4 rounded-lg bg-perle p-3 text-sm text-graphite">{item.behaviorNote}</div>
 
-          {item.replies.length === 0 && (
+          {!item.replies.some((r) => !r.handled) && (
             <div className="mt-4">
               {!showReplySimulator ? (
                 <button
@@ -255,9 +266,26 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
             <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-graphite/60">Action</h3>
 
             {item.nextAction.kind === "WAIT_HUMAN" && (
-              <p className="text-sm text-graphite/60">
-                En attente d&apos;une décision humaine sur la réponse du client (voir ci-dessus) — pas de relance
-                automatique tant que ce n&apos;est pas traité.
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-graphite/60">
+                  Réponse du client à traiter (voir ci-dessus) — pas de relance automatique tant qu&apos;elle n&apos;est pas traitée.
+                </p>
+                {item.replies
+                  .filter((r) => !r.handled)
+                  .slice(0, 1)
+                  .map((r) => (
+                    <ReplyResolver key={r.id} replyId={r.id} intent={r.classifiedIntent} />
+                  ))}
+              </div>
+            )}
+
+            {item.drafts.length > 0 && (
+              <p className="mb-3 rounded-lg bg-sky/15 p-2.5 text-sm text-azur">
+                Un brouillon préparé par Yas attend votre validation dans{" "}
+                <a href="/messages" className="font-medium underline">
+                  Messages
+                </a>
+                .
               </p>
             )}
 

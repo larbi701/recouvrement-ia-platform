@@ -52,7 +52,9 @@ Règles strictes :
 - On est encore dans le recouvrement AMIABLE, pas dans le contentieux : ne jamais mentionner "porter plainte" (terme de droit pénal, inapproprié pour un impayé commercial) ni promettre une action judiciaire précise. Si une escalade doit être évoquée (ton "dernier avertissement" uniquement), parle d'une "mise en demeure formelle" et d'une possible "procédure de recouvrement", sans détailler davantage.
 - N'utilise aucun texte entre crochets à compléter (pas de "[Nom]", "[date]", etc.) — écris un message fini, prêt à envoyer tel quel. Pour un délai, utilise une formulation relative ("dans les 5 jours suivant la réception de ce message"), jamais une date absolue que tu ne peux pas connaître.
 ${formatRules}
-- Ton de voix (charte VELOS IA) : factuel (un chiffre plutôt qu'un adjectif), direct (phrases courtes, voix active), sobre (aucune formule à effet). Évite tout vocabulaire du type "solution innovante", "révolutionner", "disruptif".
+- Ton de voix (charte VELOS IA) : factuel (un chiffre plutôt qu'un adjectif), direct (phrases courtes, voix active), sobre (aucune formule à effet). Évite tout vocabulaire du type "solution innovante", "révolutionner", "disruptif".${
+    settings.styleGuidelines.trim() ? `\n- Consignes de style de l'entreprise : ${settings.styleGuidelines.trim()}` : ""
+  }
 
 Réponds uniquement avec le message, en texte brut. Pas de commentaire, pas de balise, pas de markdown (pas de **gras**, pas de listes à puces), pas d'explication.`;
 
@@ -72,6 +74,7 @@ Réponds uniquement avec le message, en texte brut. Pas de commentaire, pas de b
     invoiceReference: invoice.reference,
     amountMad: invoice.amountMad,
     maxLength: CHANNEL_MAX_LENGTH[channel],
+    extraForbiddenTerms: settings.extraForbiddenTerms,
   });
 
   return { draft, tone, daysOverdue, guardrail };

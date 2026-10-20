@@ -563,3 +563,17 @@ L'utilisateur a fourni deux fichiers (`11-grille-de-recette.md` + `kit-poc-recou
 **Délibérément non repris du kit**, effort jugé disproportionné pour ce stade du POC : rapprochement bancaire (lettrage), validation Zod stricte par agent avec retry/repli formalisé, authentification par rôle, harnais d'évaluation formel (`eval:qualification`), structure multi-société (cabinets comptables — hors périmètre V1, voir §1bis de ce fichier).
 
 Vérifié après intégration : `tsc --noEmit`, `eslint .`, `npm run build` passent tous à zéro erreur ; test en direct du garde-fou (message généré signé "Anfa Distribution SARL", confirmé via lecture du textarea), de l'horloge simulée, du badge débiteur public, du cas transmission avocat.
+
+## 35. Refonte de la navigation : 8 onglets, chacun avec une fonction précise (2026-10-20)
+
+Demande : faire la "priorité 1" issue de la veille concurrentielle (Katalyz, AgentCollect, Altur, Freya, Audun…), rationaliser les onglets et donner une utilité concrète à chacun ("Agents IA : quand on clique il ne se passe rien").
+
+**De 10 écrans à 8**, dans l'ordre du travail : Importer · **Pilotage** (ex Tableau de bord + Prévisions + stats Interventions humaines, indicateurs façon Katalyz, tuiles cliquables vers le Portefeuille filtré) · **Centre d'action** (actions du jour + pilotage automatique + file de l'équipe) · **Portefeuille** (ex Dossiers par priorité + Portefeuille : une liste, filtres par situation, cases à cocher, "Préparer les relances" en lot, export CSV) · **Clients** (boutons Appeler / WhatsApp / Email, notes internes) · **Messages** (nouveau : À valider / Réponses clients / Envoyés) · **Agents IA** (fiches cliquables) · **Paramètres**. Anciennes routes /dossiers, /team, /forecast redirigées.
+
+**Effets réels, pas décoratifs** : un agent IA suspendu (Communication Specialist, Collection Strategist, Dispute Specialist) n'est plus appelé par aucune route (409) ; autonomie "propose seulement" → le pilotage automatique dépose tout en brouillon (Reminder.status BROUILLON) à valider dans Messages ; un message bloqué par le garde-fou n'est plus perdu mais déposé en brouillon avec le motif ; approuver un brouillon rejoue le garde-fou sur le texte final (422 si violation) puis ouvre WhatsApp/messagerie avec le texte prêt ; les réponses clients se traitent (accorder un délai = promesse de paiement créée, ou marquer traité) et ne bloquent plus le dossier ; canaux email/WhatsApp désactivables dans Paramètres (bascule sur l'autre canal), consignes de style et termes interdits ajoutés au prompt et au garde-fou. Les 4 agents "calcul" (analyse, promesses, prévision, superviseur) ne se suspendent pas : choix assumé, garantie du dispositif.
+
+**Nouveaux modèles** : AgentConfig, ClientNote ; champs Reminder.note, ClientReply.handled, Settings.channelEmail/channelWhatsapp/extraForbiddenTerms/styleGuidelines. Contact de test WhatsApp : Kenza, +212 668 820 391 (Atlas Négoce, Rif Agro Export, Nord Plast).
+
+**Bugs corrigés au passage** : les relances envoyées à la main et les fiches d'appel étaient datées de l'heure réelle au lieu de la date de démo.
+
+**Pas fait (priorités 2-3)** : négociation d'échéancier, lien de paiement, darija, rapprochement bancaire, envoi réel WhatsApp/email, agent vocal. Fenêtres d'envoi non reprises.

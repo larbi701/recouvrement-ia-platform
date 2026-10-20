@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSettings } from "@/lib/settings";
 
-// "Envoi" simulé pour la démo : on journalise la relance (traçabilité),
-// on ne l'expédie pas réellement — cf. §9 du fichier mémoire du projet.
+// Journalise l'envoi (traçabilité). Le vrai canal (WhatsApp, messagerie) est ouvert côté
+// navigateur avec le message prérempli : c'est l'utilisateur qui appuie sur "Envoyer".
 export async function POST(req: Request) {
   const { invoiceId, channel, tone, content, createdBy } = await req.json();
 
@@ -10,6 +11,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Champs manquants" }, { status: 400 });
   }
 
+  const settings = await getSettings();
   const reminder = await prisma.reminder.create({
     data: {
       invoiceId,
@@ -18,6 +20,7 @@ export async function POST(req: Request) {
       content,
       status: "ENVOYEE_SIMULEE",
       createdBy: createdBy === "HUMAIN" ? "HUMAIN" : "AGENT",
+      sentAt: settings.simulatedDate,
     },
   });
 

@@ -44,77 +44,60 @@ const NAV_GUIDE = [
   {
     href: "/dashboard",
     step: "01",
-    name: "Tableau de bord",
-    tag: "Vue la plus large",
-    description: "Combien d'argent est en retard, réparti par étape du recouvrement — pour prendre du recul.",
-    feeds: "Donne le contexte avant de passer à l'action.",
+    name: "Pilotage",
+    tag: "La synthèse en une minute",
+    description: "Ce qui attend l'équipe, le cash sécurisé, le retard moyen, la part traitée par Yas, les encaissements attendus.",
+    feeds: "Chaque indicateur ouvre la liste de dossiers correspondante.",
   },
   {
     href: "/cockpit",
     step: "02",
     name: "Centre d'action",
     tag: "Le cœur de l'appli",
-    description: "Ce que Yas recommande de faire aujourd'hui, priorité par priorité. C'est ici qu'on revient le plus souvent.",
-    feeds: "Renvoie vers un dossier précis, ou vers les Dossiers par priorité pour trier autrement.",
-  },
-  {
-    href: "/dossiers",
-    step: "03",
-    name: "Dossiers par priorité",
-    tag: "Le portefeuille segmenté",
-    description: "Le même portefeuille découpé par type de situation (urgent, gros montant, litige, en attente de validation…).",
-    feeds: "Chaque catégorie mène directement aux dossiers concernés.",
+    description: "Les actions que Yas recommande aujourd'hui, le pilotage automatique, et ce qui attend l'équipe : appels, validations, réponses.",
+    feeds: "Renvoie vers un dossier précis, vers Messages ou vers le Portefeuille filtré.",
   },
   {
     href: "/portfolio",
-    step: "04",
+    step: "03",
     name: "Portefeuille",
-    tag: "La liste complète",
-    description: "Toutes les factures, brutes, triables — pour chercher un dossier précis ou une vue exhaustive.",
-    feeds: "Utile en complément des Dossiers par priorité quand on sait déjà ce qu'on cherche.",
+    tag: "Toutes les factures",
+    description: "Une seule liste, filtrable par situation (urgent, gros montant, litige, à valider…). Actions groupées et export CSV.",
+    feeds: "Cochez des dossiers : Yas prépare les relances, vous les validez dans Messages.",
   },
   {
     href: "/customers",
-    step: "05",
-    name: "Vue client 360",
+    step: "04",
+    name: "Clients",
     tag: "Zoom client",
-    description: "Toutes les factures d'un même client, tout son historique, en un seul endroit.",
-    feeds: "Pertinent dès qu'un client a plusieurs factures en cours.",
+    description: "Toutes les factures et tout l'historique d'un client, avec les boutons pour l'appeler, lui écrire sur WhatsApp ou par email.",
+    feeds: "Les notes ajoutées ici apparaissent dans l'historique du client.",
   },
   {
-    href: "/forecast",
-    step: "08",
-    name: "Prévisions de trésorerie",
-    tag: "La projection",
-    description: "Combien Yas anticipe de récupérer à J+7/30/60/90, à partir des promesses et des probabilités de paiement.",
-    feeds: "Se met à jour dès qu'une promesse ou un paiement change de statut.",
+    href: "/messages",
+    step: "05",
+    name: "Messages",
+    tag: "Valider, répondre, tracer",
+    description: "Les brouillons de Yas à valider, les réponses des clients à traiter, tout ce qui a été envoyé.",
+    feeds: "Valider un message ouvre WhatsApp ou votre messagerie avec le texte prêt.",
   },
   {
     href: "/agents",
-    step: "07",
+    step: "06",
     name: "Agents IA",
-    tag: "Les coulisses de Yas",
-    description: "Qui, parmi les 7 agents IA, a fait quoi — la transparence sur le travail réellement effectué.",
-    feeds: "Le pendant IA des Interventions humaines, côté agents.",
-  },
-  {
-    href: "/team",
-    step: "09",
-    name: "Interventions humaines",
-    tag: "Les exceptions, pas la règle",
-    description: "Ce qui échappe volontairement à l'automatisation : appels stratégiques, validations obligatoires, litiges.",
-    feeds: "Se lit en regard des Agents IA pour voir la part réellement automatisée.",
+    tag: "Les commandes de Yas",
+    description: "Qui fait quoi parmi les 7 agents. Suspendez un agent, passez Yas en « propose seulement », ou coupez tout en un clic.",
+    feeds: "Un agent suspendu n'est plus appelé nulle part dans l'application.",
   },
   {
     href: "/settings",
-    step: "10",
+    step: "07",
     name: "Paramètres",
     tag: "Les règles du jeu",
-    description: "À partir de quel montant valider soi-même, où placer les frontières entre les étapes du recouvrement.",
+    description: "Seuil de validation, frontières des étapes, canaux autorisés, consignes de style, termes interdits, nom de l'entreprise.",
     feeds: "Change ici, et tout le moteur de décision s'ajuste immédiatement, partout.",
   },
 ];
-
 export default async function Presentation() {
   const [invoices, settings] = await Promise.all([
     prisma.invoice.findMany({
@@ -205,7 +188,7 @@ export default async function Presentation() {
             Comment se repérer dans l&apos;application
           </h2>
           <p className="mb-6 text-center text-xs text-graphite/50">
-            Dix écrans, du plus général au plus particulier — chacun s&apos;articule avec le suivant.
+            Huit écrans, dans l&apos;ordre du travail — chacun s&apos;articule avec le suivant.
           </p>
           <ol className="relative flex flex-col gap-1">
             {NAV_GUIDE.map((entry, i) => (

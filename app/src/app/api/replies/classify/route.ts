@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { getSettings } from "@/lib/settings";
+import { getAgentConfigs } from "@/lib/agentConfig";
 
 const VALID_INTENTS = ["DEMANDE_DELAI", "CONTESTATION", "CONFIRMATION", "AUTRE"] as const;
 
@@ -25,6 +26,21 @@ export async function POST(req: Request) {
 
   if (!invoice) {
     return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
+  }
+
+  // Agent suspendu : la réponse est enregistrée mais pas classée — un humain la lit.
+  if (!(await getAgentConfigs()).DISPUTE_SPECIALIST.enabled) {
+    const reply = await prisma.clientReply.create({
+      data: {
+        invoiceId,
+        content,
+        classifiedIntent: "AUTRE",
+        agentSummary: "Réponse reçue, non analysée : l'agent Dispute Specialist est suspendu.",
+        proposedAction: "À lire directement par un humain.",
+        receivedAt: settings.simulatedDate,
+      },
+    });
+    return NextResponse.json({ reply });
   }
 
   const prompt = `Tu es l'agent qui traite les réponses des clients en retard de paiement pour "${settings.companyName}" (PME marocaine, B2B). Un client vient de répondre à une relance. Analyse sa réponse.
@@ -86,6 +102,7 @@ Règles pour proposedAction :
       classifiedIntent: parsed.classifiedIntent,
       agentSummary: parsed.agentSummary,
       proposedAction: parsed.proposedAction,
+      receivedAt: settings.simulatedDate,
     },
   });
 

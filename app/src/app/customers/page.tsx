@@ -32,8 +32,13 @@ export default async function CustomersPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Vue client 360" }]} simulatedDate={settings.simulatedDate} />
+      <AppHeader breadcrumb={[{ label: "Yas", href: "/" }, { label: "Clients" }]} simulatedDate={settings.simulatedDate} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">
+        <h1 className="mb-1 text-xl font-bold text-indigo-deep">Clients</h1>
+        <p className="mb-5 text-sm text-graphite/60">
+          Le portefeuille vu par client : toutes ses factures, son historique, et les boutons pour l&apos;appeler, lui écrire sur
+          WhatsApp ou par email.
+        </p>
         <ul className="flex flex-col gap-2">
           {rows.map(({ client, invoiceCount, totalOutstanding, avgHealth, needsAttention }) => (
             <li key={client.id}>
