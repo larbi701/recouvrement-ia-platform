@@ -5,6 +5,7 @@ import { generateReminderDraft } from "@/lib/agentDraft";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
 import { getSettings } from "@/lib/settings";
 import { getAgentConfigs, SUSPENDED_MESSAGE } from "@/lib/agentConfig";
+import { FALLBACK_NOTE } from "@/lib/fallbacks";
 
 // Pilotage automatique : Yas traite d'affilée tous les dossiers dont la prochaine action
 // (email/WhatsApp) ne nécessite PAS de validation humaine (Niveau 2 — Semi-Autonome).
@@ -40,10 +41,11 @@ async function handle() {
     const item = buildWorklistItem(invoice, settings);
     if (item.nextAction.kind !== "EMAIL" && item.nextAction.kind !== "WHATSAPP") continue;
 
-    const { draft, tone, guardrail } = await generateReminderDraft(invoice, item.nextAction.kind, settings);
+    const { draft, tone, guardrail, fallback } = await generateReminderDraft(invoice, item.nextAction.kind, settings);
 
+    // Un message de secours (IA indisponible) n'est jamais envoyé seul : brouillon à relire.
     const proposeOnly = comm.autonomy === "PROPOSE";
-    if (!guardrail.ok || proposeOnly) {
+    if (!guardrail.ok || proposeOnly || fallback) {
       await prisma.reminder.create({
         data: {
           invoiceId: invoice.id,
@@ -52,13 +54,17 @@ async function handle() {
           content: draft,
           status: "BROUILLON",
           createdBy: "AGENT",
-          note: guardrail.ok ? null : guardrail.violations.join(" · "),
+          note: !guardrail.ok ? guardrail.violations.join(" · ") : fallback ? FALLBACK_NOTE : null,
           sentAt: settings.simulatedDate,
         },
       });
       drafted.push({
         clientName: invoice.client.name,
-        reason: guardrail.ok ? "Autonomie réglée sur « propose seulement »" : guardrail.violations.join(" · "),
+        reason: !guardrail.ok
+          ? guardrail.violations.join(" · ")
+          : fallback
+          ? "IA indisponible : message de secours à relire"
+          : "Autonomie réglée sur « propose seulement »",
       });
       continue;
     }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { getSettings } from "@/lib/settings";
 import { getAgentConfigs, SUSPENDED_MESSAGE } from "@/lib/agentConfig";
+import { fallbackCallSheet } from "@/lib/fallbacks";
 
 // L'IA ne passe pas l'appel elle-même (pas d'agent vocal dans ce POC) : elle prépare
 // une fiche d'appel pour un humain, et crée la tâche à traiter. Voir MEMOIRE-PROJET.md
@@ -52,17 +53,32 @@ Rédige une fiche d'appel en 4 à 6 points courts (une ligne chacun), qui couvre
 
 Réponds uniquement avec la liste à puces, sans titre ni commentaire.`;
 
-  const message = await anthropic.messages.create({
-    model: AGENT_MODEL,
-    max_tokens: 350,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const talkingPoints = message.content
-    .filter((block): block is Extract<typeof block, { type: "text" }> => block.type === "text")
-    .map((block) => block.text)
-    .join("\n")
-    .trim();
+  // Si l'IA est indisponible, la fiche d'appel de secours (déterministe) prend le relais :
+  // l'équipe peut quand même passer l'appel.
+  let talkingPoints: string;
+  let fallback = false;
+  try {
+    const message = await anthropic.messages.create({
+      model: AGENT_MODEL,
+      max_tokens: 350,
+      messages: [{ role: "user", content: prompt }],
+    });
+    talkingPoints = message.content
+      .filter((block): block is Extract<typeof block, { type: "text" }> => block.type === "text")
+      .map((block) => block.text)
+      .join("\n")
+      .trim();
+    if (!talkingPoints) throw new Error("fiche vide");
+  } catch (e) {
+    console.error("[LLM] fiche d'appel : modèle de secours utilisé :", e instanceof Error ? e.message : e);
+    fallback = true;
+    talkingPoints = fallbackCallSheet({
+      reference: invoice.reference,
+      amountMad: invoice.amountMad,
+      daysOverdue,
+      reminderCount: invoice.reminders.length,
+    });
+  }
 
   const callTask = await prisma.callTask.create({
     data: {
@@ -74,7 +90,7 @@ Réponds uniquement avec la liste à puces, sans titre ni commentaire.`;
     },
   });
 
-  return NextResponse.json({ callTask });
+  return NextResponse.json({ callTask, fallback });
 }
 
 export async function POST(req: Request) {

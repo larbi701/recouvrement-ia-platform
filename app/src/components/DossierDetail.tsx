@@ -28,7 +28,7 @@ const OUTCOME_LABELS: Record<string, string> = {
   AUTRE: "Autre",
 };
 
-type GenerateResponse = { draft: string; tone: string; channel: string; guardrail: { ok: boolean; violations: string[] } };
+type GenerateResponse = { draft: string; tone: string; channel: string; fallback?: boolean; guardrail: { ok: boolean; violations: string[] } };
 
 export function DossierDetail({ item, now }: { item: WorklistItem; now: string }) {
   const router = useRouter();
@@ -37,6 +37,7 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
   const [draftTone, setDraftTone] = useState<string | null>(null);
   const [draftChannel, setDraftChannel] = useState<string | null>(null);
   const [draftViolations, setDraftViolations] = useState<string[]>([]);
+  const [draftFallback, setDraftFallback] = useState(false);
   const [loadingGenerate, setLoadingGenerate] = useState(false);
   const [loadingSend, setLoadingSend] = useState(false);
   const [confirmation, setConfirmation] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
       setDraftTone(data.tone);
       setDraftChannel(data.channel);
       setDraftViolations(data.guardrail.ok ? [] : data.guardrail.violations);
+      setDraftFallback(Boolean(data.fallback));
     } catch {
       setConfirmation("Erreur — vérifie que ta clé API Claude est bien renseignée dans .env.local");
     } finally {
@@ -397,6 +399,12 @@ export function DossierDetail({ item, now }: { item: WorklistItem; now: string }
                   {CHANNEL_LABELS[draftChannel ?? ""] ?? draftChannel} · Ton :{" "}
                   {TONE_LABELS[draftTone ?? ""] ?? draftTone} — modifiable avant envoi
                 </span>
+                {draftFallback && (
+                  <div className="rounded-lg border border-azur/30 bg-azur/5 p-2.5 text-xs text-indigo-deep">
+                    <p className="font-medium">Message de secours</p>
+                    <p className="mt-0.5">L&apos;IA était indisponible : ce texte vient d&apos;un modèle sobre et exact. Relisez-le avant l&apos;envoi.</p>
+                  </div>
+                )}
                 {draftViolations.length > 0 && (
                   <div className="rounded-lg border border-corail/40 bg-corail/10 p-2.5 text-xs text-indigo-deep">
                     <p className="font-medium">Garde-fou : à vérifier avant envoi</p>

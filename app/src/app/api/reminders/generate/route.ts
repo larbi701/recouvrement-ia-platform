@@ -26,7 +26,7 @@ async function handle(req: Request) {
     return NextResponse.json({ error: "Facture introuvable" }, { status: 404 });
   }
 
-  const { draft, tone, daysOverdue, guardrail } = await generateReminderDraft(invoice, channel, settings);
+  const { draft, tone, daysOverdue, guardrail, fallback } = await generateReminderDraft(invoice, channel, settings);
 
   const scoring = computeRiskScore({
     daysOverdue,
@@ -35,7 +35,7 @@ async function handle(req: Request) {
     hasUnresolvedReply: invoice.replies.length > 0,
   });
 
-  return NextResponse.json({ draft, tone, channel, scoring, daysOverdue, guardrail });
+  return NextResponse.json({ draft, tone, channel, scoring, daysOverdue, guardrail, fallback });
 }
 
 export async function POST(req: Request) {

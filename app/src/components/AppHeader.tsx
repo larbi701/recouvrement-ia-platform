@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { LogoWordmark } from "@/components/Logo";
 import { ClockControl } from "@/components/ClockControl";
+import { getLlmHealth } from "@/lib/llmHealth";
 
 // Huit écrans, dans l'ordre du travail réel : on alimente, on pilote, on traite, on retrouve
 // un dossier, on regarde un client, on valide les messages, on contrôle les agents, on règle.
@@ -24,12 +25,15 @@ export async function AppHeader({
   simulatedDate?: Date;
 }) {
   const showNav = Boolean(breadcrumb);
-  const [drafts, unhandled] = showNav
-    ? await Promise.all([
-        prisma.reminder.count({ where: { status: "BROUILLON" } }),
-        prisma.clientReply.count({ where: { handled: false } }),
-      ])
-    : [0, 0];
+  const [[drafts, unhandled], llm] = await Promise.all([
+    showNav
+      ? Promise.all([
+          prisma.reminder.count({ where: { status: "BROUILLON" } }),
+          prisma.clientReply.count({ where: { handled: false } }),
+        ])
+      : Promise.resolve([0, 0]),
+    getLlmHealth(),
+  ]);
   const pending = drafts + unhandled;
 
   return (
@@ -42,6 +46,20 @@ export async function AppHeader({
           Démo — données simulées
         </span>
         {simulatedDate && <ClockControl simulatedDate={simulatedDate.toISOString()} />}
+        {llm.ok ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs text-graphite/60" title="La connexion à l'IA fonctionne.">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-velos" />
+            IA connectée
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full bg-corail/10 px-2.5 py-0.5 text-xs font-medium text-indigo-deep ring-1 ring-corail/40"
+            title={`${llm.reason} L'application continue avec des modèles de secours, à relire avant envoi.`}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-corail" />
+            IA indisponible — modèles de secours actifs
+          </span>
+        )}
       </div>
 
       {showNav && (

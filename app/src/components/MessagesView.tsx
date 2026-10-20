@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { buildMailtoUrl, buildWhatsappUrl } from "@/lib/deeplinks";
 import { ReplyResolver } from "@/components/ReplyResolver";
+import { isFallbackNote } from "@/lib/fallbacks";
 
 export type MessageDTO = {
   id: string;
@@ -131,7 +132,13 @@ function DraftCard({ m }: { m: MessageDTO }) {
         <span className="text-xs text-graphite/50">À : {m.channel === "WHATSAPP" ? m.contactPhone : m.contactEmail}</span>
       </div>
 
-      {m.note && (
+      {m.note && isFallbackNote(m.note) && (
+        <div className="mt-3 rounded-lg border border-azur/30 bg-azur/5 p-2.5 text-xs text-indigo-deep">
+          <p className="font-medium">Message de secours</p>
+          <p className="mt-0.5">L&apos;IA était indisponible : ce texte vient d&apos;un modèle sobre et exact. Relisez-le avant de valider.</p>
+        </div>
+      )}
+      {m.note && !isFallbackNote(m.note) && (
         <div className="mt-3 rounded-lg border border-corail/40 bg-corail/10 p-2.5 text-xs text-indigo-deep">
           <p className="font-medium">Retenu par le garde-fou — corrigez le texte avant de valider</p>
           <p className="mt-0.5">{m.note}</p>

@@ -1,6 +1,7 @@
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { suggestedTone, type Tone } from "@/lib/scoring";
 import { checkGeneratedContent, type GuardrailResult } from "@/lib/contentGuardrails";
+import { fallbackDraft } from "@/lib/fallbacks";
 import type { PlatformSettings } from "@/lib/settings";
 import type { Prisma } from "@prisma/client";
 
@@ -16,7 +17,7 @@ export async function generateReminderDraft(
   invoice: InvoiceForDraft,
   channel: "EMAIL" | "WHATSAPP",
   settings: PlatformSettings
-): Promise<{ draft: string; tone: Tone; daysOverdue: number; guardrail: GuardrailResult }> {
+): Promise<{ draft: string; tone: Tone; daysOverdue: number; guardrail: GuardrailResult; fallback: boolean }> {
   const daysOverdue = Math.max(0, Math.floor((settings.simulatedDate.getTime() - invoice.dueDate.getTime()) / 86_400_000));
   const tone = suggestedTone(invoice.reminders.length);
   const toneInstruction =
@@ -58,24 +59,47 @@ ${formatRules}
 
 Réponds uniquement avec le message, en texte brut. Pas de commentaire, pas de balise, pas de markdown (pas de **gras**, pas de listes à puces), pas d'explication.`;
 
-  const message = await anthropic.messages.create({
-    model: AGENT_MODEL,
-    max_tokens: 600,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const draft = message.content
-    .filter((block): block is Extract<typeof block, { type: "text" }> => block.type === "text")
-    .map((block) => block.text)
-    .join("\n")
-    .trim();
-
-  const guardrail = checkGeneratedContent(draft, {
+  const guardOpts = {
     invoiceReference: invoice.reference,
     amountMad: invoice.amountMad,
     maxLength: CHANNEL_MAX_LENGTH[channel],
     extraForbiddenTerms: settings.extraForbiddenTerms,
-  });
+  };
 
-  return { draft, tone, daysOverdue, guardrail };
+  async function ask(extra = ""): Promise<string> {
+    const message = await anthropic.messages.create({
+      model: AGENT_MODEL,
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt + extra }],
+    });
+    return message.content
+      .filter((block): block is Extract<typeof block, { type: "text" }> => block.type === "text")
+      .map((block) => block.text)
+      .join("\n")
+      .trim();
+  }
+
+  // 1) appel normal ; 2) si le garde-fou refuse le texte, une nouvelle tentative qui lui
+  // dit pourquoi ; 3) si l'IA échoue ou refuse encore, modèle de secours déterministe.
+  // La démo ne s'arrête jamais : au pire, un message sobre et exact, à relire.
+  try {
+    let draft = await ask();
+    let guardrail = checkGeneratedContent(draft, guardOpts);
+    if (!guardrail.ok) {
+      draft = await ask(`\n\nATTENTION : ta version précédente a été refusée (${guardrail.violations.join(" ; ")}). Corrige exactement ces points.`);
+      guardrail = checkGeneratedContent(draft, guardOpts);
+    }
+    if (guardrail.ok) return { draft, tone, daysOverdue, guardrail, fallback: false };
+  } catch (e) {
+    console.error("[LLM] rédaction impossible, modèle de secours utilisé :", e instanceof Error ? e.message : e);
+  }
+
+  const draft = fallbackDraft(channel, tone, {
+    contactName: invoice.client.contactName,
+    reference: invoice.reference,
+    amountMad: invoice.amountMad,
+    daysOverdue: invoice.dueDate.getTime() > settings.simulatedDate.getTime() ? -Math.ceil((invoice.dueDate.getTime() - settings.simulatedDate.getTime()) / 86_400_000) : daysOverdue,
+    companyName: settings.companyName,
+  });
+  return { draft, tone, daysOverdue, guardrail: checkGeneratedContent(draft, guardOpts), fallback: true };
 }

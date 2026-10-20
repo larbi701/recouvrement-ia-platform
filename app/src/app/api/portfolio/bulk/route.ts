@@ -5,6 +5,7 @@ import { generateReminderDraft } from "@/lib/agentDraft";
 import { buildWorklistItem } from "@/lib/buildWorklistItem";
 import { getSettings } from "@/lib/settings";
 import { getAgentConfigs, SUSPENDED_MESSAGE } from "@/lib/agentConfig";
+import { FALLBACK_NOTE } from "@/lib/fallbacks";
 
 const MAX_BULK = 8; // un appel Claude par dossier : on borne le coût d'une action groupée
 
@@ -44,7 +45,7 @@ async function handle(req: Request) {
       skipped.push({ clientName: item.clientName, reason: `Limite de ${MAX_BULK} dossiers par action groupée` });
       continue;
     }
-    const { draft, tone, guardrail } = await generateReminderDraft(invoice, item.nextAction.kind, settings);
+    const { draft, tone, guardrail, fallback } = await generateReminderDraft(invoice, item.nextAction.kind, settings);
     await prisma.reminder.create({
       data: {
         invoiceId: invoice.id,
@@ -53,7 +54,7 @@ async function handle(req: Request) {
         content: draft,
         status: "BROUILLON",
         createdBy: "AGENT",
-        note: guardrail.ok ? null : guardrail.violations.join(" · "),
+        note: !guardrail.ok ? guardrail.violations.join(" · ") : fallback ? FALLBACK_NOTE : null,
         sentAt: settings.simulatedDate,
       },
     });

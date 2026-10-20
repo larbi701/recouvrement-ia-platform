@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { anthropic, AGENT_MODEL } from "@/lib/anthropic";
 import { getSettings } from "@/lib/settings";
 import { getAgentConfigs } from "@/lib/agentConfig";
+import { fallbackClassify } from "@/lib/fallbacks";
 
 const VALID_INTENTS = ["DEMANDE_DELAI", "CONTESTATION", "CONFIRMATION", "AUTRE"] as const;
 
@@ -64,26 +65,26 @@ Règles pour proposedAction :
 - CONFIRMATION : proposer de classer le dossier en attente de paiement, sans nouvelle relance immédiate.
 - AUTRE : proposer qu'un humain lise la réponse directement, sans action automatique suggérée.`;
 
-  const message = await anthropic.messages.create({
-    model: AGENT_MODEL,
-    max_tokens: 400,
-    messages: [{ role: "user", content: prompt }],
-  });
-
-  const raw = message.content
-    .filter((block): block is Extract<typeof block, { type: "text" }> => block.type === "text")
-    .map((block) => block.text)
-    .join("\n")
-    .trim();
-
+  // Si l'IA est indisponible ou renvoie une sortie illisible, classification simplifiée par
+  // mots-clés : la réponse du client est enregistrée et traitable, jamais perdue.
   let parsed: { classifiedIntent: string; agentSummary: string; proposedAction: string };
   try {
+    const message = await anthropic.messages.create({
+      model: AGENT_MODEL,
+      max_tokens: 400,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw = message.content
+      .filter((block): block is Extract<typeof block, { type: "text" }> => block.type === "text")
+      .map((block) => block.text)
+      .join("\n")
+      .trim();
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-  } catch {
-    return NextResponse.json({ error: "Réponse de l'agent illisible, réessaie." }, { status: 502 });
+  } catch (e) {
+    console.error("[LLM] classification : analyse simplifiée utilisée :", e instanceof Error ? e.message : e);
+    parsed = fallbackClassify(content);
   }
-
   // Validation de sortie : si le modèle renvoie une intention hors de l'énumération attendue
   // (ou un champ manquant), on ne stocke jamais une valeur inconnue — repli sur AUTRE, qui
   // ne déclenche aucune action automatique et force une lecture humaine du dossier.
